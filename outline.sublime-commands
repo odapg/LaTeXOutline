@@ -1,0 +1,31 @@
+[
+  {
+    "caption": "LaTeX Outline (Right)",
+    "command": "outline",
+    "args": {
+      "immediate": true,
+      "other_group": "right",
+      "single_pane": true,
+      "project": true,
+      "layout": 0
+    }
+  },
+  {
+    "caption": "LaTeX Outline (Left)",
+    "command": "outline",
+    "args": {
+      "immediate": true,
+      "other_group": "right",
+      "single_pane": true,
+      "project": true,
+      "layout": 1
+    }
+  },
+  {
+    "caption": "LaTeX Outline: Close sidebar",
+    "command": "outline_close_sidebar",
+    "args": {
+      
+    }
+  }
+]
