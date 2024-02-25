@@ -101,7 +101,6 @@ def show(window, view_id=None, ignore_existing=False, single_pane=False, other_g
 
     view.set_name(name)
     view.settings().set('outline_rename_mode', False)
-    # view.settings().set('font_size', 14)
     window.focus_view(view)
 
     if layout >= 2:

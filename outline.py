@@ -1,7 +1,7 @@
 import sublime
 from sublime import Region
 from sublime_plugin import WindowCommand, TextCommand, EventListener
-from .show import show, refresh_sym_view, get_sidebar_views_groups, get_sidebar_status, filter_symlist
+from .show import show, refresh_sym_view, get_sidebar_views_groups, get_sidebar_status, filter_symlist, binary_search
 import re
 
 ST3 = int(sublime.version()) >= 3000
@@ -150,5 +150,5 @@ class OutlineEventHandler(EventListener):
 			# center symview at the point
 			sym_view.show_at_center(sym_point_start)
 			sym_view.sel().clear()
-			sym_view.sel().add(sym_view.line(sym_point_start))
+			sym_view.sel().add(sym_point_start)
 			view.window().focus_view(view)

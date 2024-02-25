@@ -1,0 +1,23 @@
+[
+    { "keys": ["super+j", "a"], "command": "outline",
+        "args": {
+            "immediate": true,
+            "other_group": "right",
+            "single_pane": true,
+            "project": true,
+            "layout": 1
+        },
+    },
+    { "keys": ["super+j", "e"], "command": "outline",
+        "args": {
+            "immediate": true,
+            "other_group": "right",
+            "single_pane": true,
+            "project": true,
+            "layout": 0
+        }, 
+        "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" },]
+    },
+    { "keys": ["super+j", "z"], "command": "outline_close_sidebar"    },
+
+]
