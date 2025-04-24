@@ -14,7 +14,6 @@ In particular, the captured sectioning commands are: `part`, `chapter`, `section
 1. Clone or download this repository using the green `Clone or download` button.
 2. If needed, rename the cloned or extracted folder to `LaTeXOutline`. 
 3. Move the `LaTeXOutline` folder to your Sublime Text's `Packages` folder. 
-<!-- To find the `Packages` folder, click the menu `Settings` > `Browse Packages`. -->
 4. Restart Sublime Text.
 5. Modify the settings and possibly the `LaTeXOutline-custom.hidden-color-scheme` to your liking by going to the menu `Settings` > `Packages Settings`  > `LaTeXOutline`.
 
