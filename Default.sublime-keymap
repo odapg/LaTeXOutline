@@ -1,0 +1,20 @@
+[
+    { "keys": ["super+j", "a"], "command": "latex_outline",
+        "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
+        "args": {"side": "left"},
+    },
+    { "keys": ["super+j", "e"], "command": "latex_outline",
+        "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
+        "args": {"side": "right"}
+    },
+    { "keys": ["super+j", "z"], "command": "latex_outline_close_sidebar"},
+
+// Neutralizes the ["super+j", "a"] and ["super+j", "e"] shortcuts outside of LaTeX files.
+// Delete or comment these lines to use these shortcuts elsewhere.
+    { "keys": ["super+j", "a"], "command": "noop",
+        "context": [{ "key": "selector", "operator": "not_equal", "operand": "text.tex.latex" }],
+    },
+    { "keys": ["super+j", "e"], "command": "noop",
+        "context": [{ "key": "selector", "operator": "not_equal", "operand": "text.tex.latex" }],
+    },
+]

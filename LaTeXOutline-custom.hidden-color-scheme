@@ -1,0 +1,51 @@
+{
+    "name": "LaTeXOutline Color Scheme",
+    "globals":
+    {
+        "background": "#354551",
+        "invisibles": "#354551",
+        "foreground": "#e9e7e2",
+        "line_highlight": "#2a3034",
+
+    },
+    "rules":
+    [   {
+            "name": "Part",
+            "scope": "part.latexoutline",
+            "foreground": "rgb(240, 150, 150)",
+            "font_style": "bold, glow",
+        },
+        {
+            "name": "Chapter",
+            "scope": "chapter.latexoutline",
+            "foreground": "#ffece6",
+            "font_style": "bold",
+        },
+        {
+            "name": "Section",
+            "scope": "section.latexoutline",
+            "foreground": "rgb(205, 254, 229)",
+            "font_style": "bold",
+        },
+        {
+            "name": "Subsection",
+            "scope": "subsection.latexoutline",
+            "foreground": "rgb(200, 230, 255)",
+        },
+        {
+            "name": "Subsubsection",
+            "scope": "subsubsection.latexoutline",
+            "foreground": "rgb(240, 255, 220)",
+        },
+        {
+            "name": "Paragraph",
+            "scope": "paragraph.latexoutline",
+            "foreground": "rgb(255, 255, 255)",
+        },
+        {
+            "name": "Frametitle",
+            "scope": "frametitle.latexoutline",
+            "foreground": "rgb(168, 231, 251)",
+        },
+    ]
+}

@@ -1,0 +1,51 @@
+{
+    "name": "LaTeXOutline Color Scheme",
+    "globals":
+    {
+        "background": "hsl(210, 15%, 22%)",
+        "invisibles": "hsl(210, 15%, 22%)",
+        "foreground": "hsl(219, 28%, 88%)",
+        "line_highlight": "hsla(210, 13%, 40%, 0.7)",
+
+    },
+    "rules":
+    [   {
+            "name": "Part",
+            "scope": "part.latexoutline",
+            "foreground": "hsl(0, 0%, 97%)",
+            "font_style": "bold, glow",
+        },
+        {
+            "name": "Chapter",
+            "scope": "chapter.latexoutline",
+            "foreground": "hsl(14, 100%, 88%)",
+            "font_style": "bold",
+        },
+        {
+            "name": "Section",
+            "scope": "section.latexoutline",
+            "foreground": "hsl(208, 100%, 82%)",
+            "font_style": "bold",
+        },
+        {
+            "name": "Subsection",
+            "scope": "subsection.latexoutline",
+            "foreground": "hsl(114, 48%, 76%)",
+        },
+        {
+            "name": "Subsubsection",
+            "scope": "subsubsection.latexoutline",
+            "foreground": "hsl(300, 38%, 73%)",
+        },
+        {
+            "name": "Paragraph",
+            "scope": "paragraph.latexoutline",
+            "foreground": "hsl(210, 13%, 45%)",
+        },
+        {
+            "name": "Frametitle",
+            "scope": "frametitle.latexoutline",
+            "foreground": "hsl(180, 36%, 54%)",
+        },
+    ]
+}

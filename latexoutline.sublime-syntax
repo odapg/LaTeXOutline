@@ -1,0 +1,44 @@
+%YAML 1.2
+---
+name: LaTeXOutline
+file_extensions: latexoutline
+scope: text.latexoutline
+variables:
+  part_char: '■'
+  chap_char: '𑗕'
+  sec_char: '⏺'
+  ssec_char: '⊛'
+  sssec_char: '‣'
+  par_char: '⸱'
+  ftitle_char: '▫'
+
+contexts:
+  main:
+    - match: ({{part_char}}\s)([^\n]+)
+      captures:
+        1: bullet.part.latexoutline
+        2: part.latexoutline
+    - match: ({{chap_char}}\s)([^\n]+)
+      captures:
+        1: bullet.chapter.latexoutline
+        2: chapter.latexoutline
+    - match: ({{sec_char}}\s)([^\n]+)
+      captures:
+        1: bullet.section.latexoutline
+        2: section.latexoutline
+    - match: (\s{{ssec_char}}\s)([^\n]+)
+      captures:
+        1: bullet.subsection.latexoutline
+        2: subsection.latexoutline
+    - match: (\s{{sssec_char}}\s)([^\n]+)
+      captures:
+        1: bullet.subsubsection.latexoutline
+        2: subsubsection.latexoutline
+    - match: (\s{{par_char}}\s)([^\n]+)
+      captures:
+        1: bullet.paragraph.latexoutline
+        2: paragraph.latexoutline
+    - match: ({{ftitle_char}}\s)([^\n]+)
+      captures:
+        1: bullet.frametitle.latexoutline
+        2: frametitle.latexoutline

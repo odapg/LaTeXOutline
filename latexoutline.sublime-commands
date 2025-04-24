@@ -1,0 +1,23 @@
+[
+  {
+    "caption": "LaTeX Outline (Right)",
+    "command": "latex_outline",
+    "args": {
+      "side": "right"
+    }
+  },
+  {
+    "caption": "LaTeX Outline (Left)",
+    "command": "latex_outline",
+    "args": {
+      "side": "left"
+    }
+  },
+  {
+    "caption": "LaTeX Outline: Close sidebar",
+    "command": "latex_outline_close_sidebar",
+    "args": {
+      
+    }
+  }
+]
