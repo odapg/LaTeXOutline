@@ -27,6 +27,15 @@
                             {
                                 "command": "edit_settings",
                                 "args": {
+                                    "base_file": "${packages}/LaTeXOutline/Default.sublime-keymap",
+                                    "default": "{\n\t$0\n}\n"
+                                },
+                                "caption": "Keybindings"
+                            },
+                            { "caption": "-" },
+                            {
+                                "command": "edit_settings",
+                                "args": {
                                     "base_file": "${packages}/LaTeXOutline/LaTeXOutline-custom.hidden-color-scheme",
                                     "default": "{\n\t$0\n}\n"
                                 },
