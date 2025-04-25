@@ -83,7 +83,7 @@ def refresh_sym_view(sym_view, path, view):
 def delayed_sync_symview():
     view = sublime.active_window().active_view()
     sym_view, sym_group = get_sidebar_view_and_group(sublime.active_window())
-    if not sym_view.settings().get('outline_sync'):
+    if not sym_view or not sym_view.settings().get('outline_sync'):
         return
     if sym_view != None:
         unfiltered_st_sym_list = [(v.region,v.name) for v in view.symbol_regions() if v.kind[1]=='f']
@@ -149,6 +149,29 @@ def copy_label(active_view, region_position):
             section = active_view.substr(sublime.Region(region_position[0],region_position[1]))
             sublime.active_window().status_message(f" ⨉ No \\label found for '{section}'")
 
+# --------------------------
+
+def reduce_layout(window, sym_view, sym_group, sym_side):
+
+    current_layout = window.layout()
+    rows = current_layout["rows"]
+    cols = current_layout["cols"]
+    cells = current_layout["cells"]
+    x_min, y_min, x_max, y_max = cells[sym_group]
+    width = cols[x_min +1] - cols[x_min]
+    new_cells = [c for c in cells if c[2] <= x_min ] \
+            + [ [c[0]-1, c[1], c[2]-1, c[3]] for c in cells if c[0] >= x_max] 
+    
+    if sym_side == "right":
+        new_cols = [c / (1-width) for c in cols if c < 1 - width ] \
+                + [c for c in cols if c > 1 - width ]
+    elif sym_side == "left":
+        new_cols = [c for c in cols if c < width ] \
+                + [(c - width) / (1-width) for c in cols if c >  width ]
+    else:
+        return None
+
+    return {"cols": new_cols, "rows": rows, "cells": new_cells}
 
 # --------------------------------------------------------------------------------------#
 #                                                                                       #

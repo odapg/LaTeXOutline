@@ -7,7 +7,6 @@ from sublime import Region, set_timeout_async
 from sublime_plugin import WindowCommand, TextCommand, EventListener
 from .lo_functions import * 
 import re
-import time
 
 # --------------------------------------------------------------------------------------#
 #                                                                                       #
@@ -25,30 +24,13 @@ class LatexOutlineCloseSidebarCommand(WindowCommand):
     def run(self):
         active_view = self.window.active_view()
         sym_view, sym_group = get_sidebar_view_and_group(self.window)
+
         if sym_view:
             sym_side = sym_view.settings().get('side')
-            current_layout = self.window.layout()
-            rows = current_layout["rows"]
-            cols = current_layout["cols"]
-            cells = current_layout["cells"]
-            x_min, y_min, x_max, y_max = cells[sym_group]
-            width = cols[x_min +1] - cols[x_min]
-            new_cells = [c for c in cells if c[2] <= x_min ] \
-                    + [ [c[0]-1, c[1], c[2]-1, c[3]] for c in cells if c[0] >= x_max] 
-            
-            if sym_side == "right":
-                new_cols = [c / (1-width) for c in cols if c < 1 - width ] \
-                        + [c for c in cols if c > 1 - width ]
-            elif sym_side == "left":
-                new_cols = [c for c in cols if c < width ] \
-                        + [(c - width) / (1-width) for c in cols if c >  width ]
-            else:
-                return
-
+            lo_new_layout = reduce_layout(self.window, sym_view, sym_group, sym_side)
             self.window.focus_view(sym_view)
             self.window.run_command('close_file')
-
-            self.window.set_layout({"cols": new_cols, "rows": rows, "cells": new_cells})
+            self.window.set_layout(lo_new_layout)
             self.window.focus_view(active_view)
 
 # ----------------------------------------------------
@@ -157,30 +139,11 @@ class LatexOutlineEventHandler(EventListener):
             return
         window = view.window()
         sym_view, sym_group = get_sidebar_view_and_group(window)
-        sym_side = sym_view.settings().get('side')
-        time.sleep(0.1)
         
-        if sym_view:    
-            current_layout = window.layout()
-            rows = current_layout["rows"]
-            cols = current_layout["cols"]
-            cells = current_layout["cells"]
-            x_min, y_min, x_max, y_max = cells[sym_group]
-            width = cols[x_min +1] - cols[x_min]
-            new_cells = [c for c in cells if c[2] <= x_min ] \
-                    + [ [c[0]-1, c[1], c[2]-1, c[3]] for c in cells if c[0] >= x_max] 
-            
-            if sym_side == "right":
-                new_cols = [c / (1-width) for c in cols if c < 1 - width ] \
-                        + [c for c in cols if c > 1 - width ]
-            elif sym_side == "left":
-                new_cols = [c for c in cols if c < width ] \
-                        + [(c - width) / (1-width) for c in cols if c >  width ]
-            else:
-                return
-
-            window.settings().set('lo_new_layout', {"cols": new_cols, "rows": rows, "cells": new_cells})
-            # window.set_layout({"cols": new_cols, "rows": rows, "cells": new_cells})
+        if sym_view:
+            sym_side = sym_view.settings().get('side')
+            lo_new_layout = reduce_layout(window, sym_view, sym_group, sym_side)
+            window.settings().set('lo_new_layout', lo_new_layout)
 
     def on_close(self, view):
         window = sublime.active_window()
@@ -188,6 +151,7 @@ class LatexOutlineEventHandler(EventListener):
             return
         window.set_layout(window.settings().get('lo_new_layout'))
         window.settings().erase('lo_new_layout')
+
 # --------------
 
     def on_post_window_command(self, window, command_name, args):
