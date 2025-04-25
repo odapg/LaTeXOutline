@@ -1,23 +1,37 @@
 [
   {
-    "caption": "LaTeX Outline (Right)",
+    "caption": "LaTeXOutline (Right)",
     "command": "latex_outline",
     "args": {
       "side": "right"
     }
   },
   {
-    "caption": "LaTeX Outline (Left)",
+    "caption": "LaTeXOutline (Left)",
     "command": "latex_outline",
     "args": {
       "side": "left"
     }
   },
   {
-    "caption": "LaTeX Outline: Close sidebar",
+    "caption": "LaTeXOutline: Close sidebar",
     "command": "latex_outline_close_sidebar",
+    "args": {}
+  },
+  {
+    "caption": "LaTeXOutline: Settings",
+    "command": "edit_settings",
     "args": {
-      
-    }
-  }
+        "base_file": "${packages}/LaTeXOutline/latexoutline.sublime-settings",
+        "default": "{\n\t$0\n}\n"
+    },
+  },
+  {
+  "caption": "LaTeXOutline: Keybindings",
+  "command": "edit_settings",
+  "args": {
+      "base_file": "${packages}/LaTeXOutline/Default.sublime-keymap",
+      "default": "{\n\t$0\n}\n"
+    },
+  },
 ]

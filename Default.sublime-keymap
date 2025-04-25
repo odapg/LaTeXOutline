@@ -1,4 +1,6 @@
 [
+// Copy these uncommented lines to your User keymap to use the shortkeys 
+//
     { "keys": ["super+j", "a"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
         "args": {"side": "left"},
@@ -9,8 +11,8 @@
     },
     { "keys": ["super+j", "z"], "command": "latex_outline_close_sidebar"},
 
-// Neutralizes the ["super+j", "a"] and ["super+j", "e"] shortcuts outside of LaTeX files.
-// Delete or comment these lines to use these shortcuts elsewhere.
+// Uncomment the lines below to neutralize the ["super+j", "a"] and ["super+j", "e"]
+// shortcuts outside of LaTeX files
     { "keys": ["super+j", "a"], "command": "noop",
         "context": [{ "key": "selector", "operator": "not_equal", "operand": "text.tex.latex" }],
     },

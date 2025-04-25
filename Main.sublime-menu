@@ -16,21 +16,30 @@
                         "children":
                         [
                             {
+                                "caption": "Settings",
                                 "command": "edit_settings",
                                 "args": {
                                     "base_file": "${packages}/LaTeXOutline/latexoutline.sublime-settings",
                                     "default": "{\n\t$0\n}\n"
                                 },
-                                "caption": "Settings"
                             },
                             { "caption": "-" },
                             {
+                                "caption": "Keybindings",
+                                "command": "edit_settings",
+                                "args": {
+                                    "base_file": "${packages}/LaTeXOutline/Default.sublime-keymap",
+                                    "default": "{\n\t$0\n}\n"
+                                },
+                            },
+                            { "caption": "-" },
+                            {
+                                "caption": "Custom Color Scheme",
                                 "command": "edit_settings",
                                 "args": {
                                     "base_file": "${packages}/LaTeXOutline/LaTeXOutline-custom.hidden-color-scheme",
                                     "default": "{\n\t$0\n}\n"
                                 },
-                                "caption": "Custom Color Scheme"
                             },
                         ]
                     }

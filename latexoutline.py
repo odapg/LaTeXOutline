@@ -56,6 +56,13 @@ class LatexOutlineRefreshCommand(TextCommand):
     def run(self, edit, symlist=None, symkeys=None, path=None, active_view=None):
         self.view.erase(edit, Region(0, self.view.size()))
         self.view.insert(edit, 0, "\n".join(symlist))
+        # self.view.add_regions(
+        #     "lines", 
+        #     self.view.lines(Region(0, self.view.size())),
+        #     icon='Packages/LaTeXOutline/chevron.png',
+        #     scope='region.bluish"',
+        #     flags=128
+        # )
         self.view.settings().set('symlist', symlist)
         self.view.settings().set('symkeys', symkeys)
         if active_view:
