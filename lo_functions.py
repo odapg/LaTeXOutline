@@ -33,8 +33,8 @@ def show(window, side="right"):
 
     # Closes the outline view if it already exists
     if get_sidebar_status(window):
-        sym_view, sym_group = get_sidebar_view_and_group(window)
-        previous_side = sym_view.settings().get('side')
+        lo_view, lo_group = get_sidebar_view_and_group(window)
+        previous_side = lo_view.settings().get('side')
         window.run_command('latex_outline_close_sidebar')
         if side != previous_side:
             show(window, side=side)
@@ -57,38 +57,38 @@ def show(window, side="right"):
 
 # --------------------------
 
-def refresh_sym_view(sym_view, path, view):
+def refresh_lo_view(lo_view, path, view):
 
-    # Get the symbol list
-    unfiltered_st_sym_list = [(v.region,v.name) for v in view.symbol_regions() if v.kind[1]=='f']
-    st_sym_list = filter_symlist(unfiltered_st_sym_list)
+    # Get the section list
+    unfiltered_st_sec_list = [(v.region,v.name) for v in view.symbol_regions() if v.kind[1]=='f']
+    st_sec_list = filter_seclist(unfiltered_st_sec_list)
 
     l = []
     k = []
     active_view_id = view.id()
 
-    for symbol in st_sym_list:
+    for symbol in st_sec_list:
         rng, sym = symbol
         l.append(sym)
         k.append((rng.a, rng.b))
-    if sym_view != None:
-        sym_view.settings().erase('symlist')
-        sym_view.settings().erase('symkeys')
-        sym_view.run_command(
+    if lo_view != None:
+        lo_view.settings().erase('seclist')
+        lo_view.settings().erase('seckeys')
+        lo_view.run_command(
             'latex_outline_refresh', 
-            {'symlist': l, 'symkeys': k, 'path': path, 'active_view': active_view_id})
+            {'seclist': l, 'seckeys': k, 'path': path, 'active_view': active_view_id})
 
 # --------------------------
 
-def delayed_sync_symview():
+def delayed_sync_lo_view():
     view = sublime.active_window().active_view()
-    sym_view, sym_group = get_sidebar_view_and_group(sublime.active_window())
-    if not sym_view or not sym_view.settings().get('outline_sync'):
+    lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
+    if not lo_view or not lo_view.settings().get('outline_sync'):
         return
-    if sym_view != None:
-        unfiltered_st_sym_list = [(v.region,v.name) for v in view.symbol_regions() if v.kind[1]=='f']
-        st_symlist = filter_symlist(unfiltered_st_sym_list)
-        sync_symview(sym_view, st_symlist)
+    if lo_view != None:
+        unfiltered_st_sec_list = [(v.region,v.name) for v in view.symbol_regions() if v.kind[1]=='f']
+        st_seclist = filter_seclist(unfiltered_st_sec_list)
+        sync_lo_view(lo_view, st_seclist)
     view.settings().set('sync_in_progress', False)
 
 
@@ -96,25 +96,25 @@ def delayed_sync_symview():
 
 def find_selected_section():
     window = sublime.active_window()
-    sym_view, sym_group = get_sidebar_view_and_group(window)
+    lo_view, lo_group = get_sidebar_view_and_group(window)
 
-    if len(sym_view.sel()) == 0:
+    if len(lo_view.sel()) == 0:
         return None
     
-    active_view_id = sym_view.settings().get('active_view')
+    active_view_id = lo_view.settings().get('active_view')
     possible_views = [v for v in window.views() if v.id() == active_view_id]
     active_view = None if not possible_views else possible_views[0]
 
     if active_view != None:
-        (row, col) = sym_view.rowcol(sym_view.sel()[0].begin())
-        sel_scope = sym_view.scope_name(sym_view.sel()[0].begin())
+        (row, col) = lo_view.rowcol(lo_view.sel()[0].begin())
+        sel_scope = lo_view.scope_name(lo_view.sel()[0].begin())
         
-        refresh_sym_view(sym_view, active_view.file_name(), active_view)
-        symkeys = sym_view.settings().get('symkeys')
-        symlist = sym_view.settings().get('symlist')
-        if not symkeys or not symlist or row == None:
+        refresh_lo_view(lo_view, active_view.file_name(), active_view)
+        seckeys = lo_view.settings().get('seckeys')
+        seclist = lo_view.settings().get('seclist')
+        if not seckeys or not seclist or row == None:
             return None
-        region_position = symkeys[row]
+        region_position = seckeys[row]
         label_copy = False
         if 'bullet' in sel_scope:
             label_copy = True
@@ -131,7 +131,7 @@ def goto_region(active_view, region_position):
         active_view.sel().clear()
         active_view.sel().add(r)
         active_view.window().focus_view(active_view)
-        delayed_sync_symview()    
+        delayed_sync_lo_view()    
 
 # --------------------------
 
@@ -151,13 +151,13 @@ def copy_label(active_view, region_position):
 
 # --------------------------
 
-def reduce_layout(window, sym_view, sym_group, sym_side):
+def reduce_layout(window, lo_view, lo_group, sym_side):
 
     current_layout = window.layout()
     rows = current_layout["rows"]
     cols = current_layout["cols"]
     cells = current_layout["cells"]
-    x_min, y_min, x_max, y_max = cells[sym_group]
+    x_min, y_min, x_max, y_max = cells[lo_group]
     width = cols[x_min +1] - cols[x_min]
     new_cells = [c for c in cells if c[2] <= x_min ] \
             + [ [c[0]-1, c[1], c[2]-1, c[3]] for c in cells if c[0] >= x_max] 
@@ -180,23 +180,23 @@ def reduce_layout(window, sym_view, sym_group, sym_side):
 # --------------------------------------------------------------------------------------#
 
 
-def sync_symview(sym_view, st_symlist):
+def sync_lo_view(lo_view, st_seclist):
     '''
     sync the outline view with current file location
     '''
     view = sublime.active_window().active_view()
     point = view.sel()[0].end()
-    range_lows = [view.line(range.a).begin() for range, symbol in st_symlist]
+    range_lows = [view.line(range.a).begin() for range, symbol in st_seclist]
     range_sorted = [0] + range_lows[1:len(range_lows)] + [view.size()]
-    sym_line = binary_search(range_sorted, point) - 1
+    lo_line = binary_search(range_sorted, point) - 1
 
-    if (sym_view is not None):
-        sym_point_start = sym_view.text_point_utf8(sym_line, 0)
-        sym_view.show_at_center(sym_point_start, animate=True)
-        sym_view.sel().clear()
-        sym_view.sel().add(sym_point_start)
+    if (lo_view is not None):
+        lo_point_start = lo_view.text_point_utf8(lo_line, 0)
+        lo_view.show_at_center(lo_point_start, animate=True)
+        lo_view.sel().clear()
+        lo_view.sel().add(lo_point_start)
         # For some reason, the following makes the outline highlighting more reliable.
-        sym_view.set_syntax_file('Packages/LaTeXOutline/latexoutline.sublime-syntax')
+        lo_view.set_syntax_file('Packages/LaTeXOutline/latexoutline.sublime-syntax')
 
 # --------------------------
 
@@ -278,13 +278,13 @@ def calc_width(view):
 
 def get_sidebar_view_and_group(window):
     views = window.views()
-    sym_view = None
-    sym_group = None
+    lo_view = None
+    lo_group = None
     for v in views:
         if 'latexoutline.sublime-syntax' in v.settings().get('syntax'):
-            sym_view = v
-            sym_group, i = window.get_view_index(sym_view)
-    return (sym_view, sym_group)
+            lo_view = v
+            lo_group, i = window.get_view_index(lo_view)
+    return (lo_view, lo_group)
 
 # --------------------------
 
@@ -298,19 +298,19 @@ def get_sidebar_status(window):
 
 # --------------------------
 
-def filter_symlist(unfiltered_symlist):
+def filter_seclist(unfiltered_seclist):
     '''
-    Filters the symlist to only show LaTeX sections in indented manner
+    Filters the seclist to only show LaTeX sections in indented manner
     '''
     pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle):.*'
-    filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
-    part_symlist = [x for x in unfiltered_symlist if x[1].startswith("Part:")]
-    chapter_symlist = [x for x in unfiltered_symlist if x[1].startswith("Chapter:")]
+    sec_list = [x for x in unfiltered_seclist if re.match(pattern, x[1])]
+    part_list = [x for x in unfiltered_seclist if x[1].startswith("Part:")]
+    chapter_list = [x for x in unfiltered_seclist if x[1].startswith("Chapter:")]
     
     shift =0
-    if len(part_symlist) > 0:
+    if len(part_list) > 0:
         shift=2
-    elif len(chapter_symlist) > 0:
+    elif len(chapter_list) > 0:
         shift=1
 
     rs = ' ' * shift + sec_char + ' '
@@ -321,7 +321,7 @@ def filter_symlist(unfiltered_symlist):
     rch = ' ' + chap_char + ' ' if shift==2 else chap_char + ' '
     rftt= ftitle_char + ' '
 
-    cleaned_symlist = [
+    cleaned_sec_list = [
         (i, j.replace('\n','') \
             .replace('Part: ', rpt) \
             .replace('Chapter: ', rch) \
@@ -329,9 +329,9 @@ def filter_symlist(unfiltered_symlist):
             .replace('Subsection: ', rss) \
             .replace('Subsubsection: ', rsss) \
             .replace('Paragraph: ', rpar) \
-            .replace('Frametitle: ', rftt) ) for i,j in filtered_symlist
+            .replace('Frametitle: ', rftt) ) for i,j in sec_list
     ]
-    return cleaned_symlist
+    return cleaned_sec_list
 
 
 # --------------------------

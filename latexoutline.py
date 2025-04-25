@@ -23,12 +23,12 @@ class LatexOutlineCommand(WindowCommand):
 class LatexOutlineCloseSidebarCommand(WindowCommand):
     def run(self):
         active_view = self.window.active_view()
-        sym_view, sym_group = get_sidebar_view_and_group(self.window)
+        lo_view, lo_group = get_sidebar_view_and_group(self.window)
 
-        if sym_view:
-            sym_side = sym_view.settings().get('side')
-            lo_new_layout = reduce_layout(self.window, sym_view, sym_group, sym_side)
-            self.window.focus_view(sym_view)
+        if lo_view:
+            lo_side = lo_view.settings().get('side')
+            lo_new_layout = reduce_layout(self.window, lo_view, lo_group, lo_side)
+            self.window.focus_view(lo_view)
             self.window.run_command('close_file')
             self.window.set_layout(lo_new_layout)
             self.window.focus_view(active_view)
@@ -36,9 +36,9 @@ class LatexOutlineCloseSidebarCommand(WindowCommand):
 # ----------------------------------------------------
 
 class LatexOutlineRefreshCommand(TextCommand):
-    def run(self, edit, symlist=None, symkeys=None, path=None, active_view=None):
+    def run(self, edit, seclist=None, seckeys=None, path=None, active_view=None):
         self.view.erase(edit, Region(0, self.view.size()))
-        self.view.insert(edit, 0, "\n".join(symlist))
+        self.view.insert(edit, 0, "\n".join(seclist))
         # self.view.add_regions(
         #     "lines", 
         #     self.view.lines(Region(0, self.view.size())),
@@ -46,8 +46,8 @@ class LatexOutlineRefreshCommand(TextCommand):
         #     scope='region.bluish"',
         #     flags=128
         # )
-        self.view.settings().set('symlist', symlist)
-        self.view.settings().set('symkeys', symkeys)
+        self.view.settings().set('seclist', seclist)
+        self.view.settings().set('seckeys', seckeys)
         if active_view:
             self.view.settings().set('active_view', active_view)
         self.view.settings().set('current_file', path)
@@ -71,8 +71,8 @@ class LatexOutlineSyncEventHandler(EventListener):
         if not get_sidebar_status(view.window()):
             return
         
-        view.settings().set('sync_in_progress', True)
-        sublime.set_timeout_async(delayed_sync_symview,1000)
+        view.settings().set('sync_in_progress', loe)
+        sublime.set_timeout_async(delayed_sync_lo_view,1000)
 
 # ----------------------------------------------------
 
@@ -87,14 +87,14 @@ class LatexOutlineEventHandler(EventListener):
         if view.window().get_view_index(view)[0] == -1:
             return
 
-        sym_view, sym_group = get_sidebar_view_and_group(view.window())
+        lo_view, lo_group = get_sidebar_view_and_group(view.window())
 
-        if sym_view != None:
-            if sym_view.settings().get('current_file') == view.file_name() and view.file_name() != None:
+        if lo_view != None:
+            if lo_view.settings().get('current_file') == view.file_name() and view.file_name() != None:
                 return
             else:
-                sym_view.settings().set('current_file', view.file_name())
-                refresh_sym_view(sym_view, view.file_name(), view)
+                lo_view.settings().set('current_file', view.file_name())
+                refresh_lo_view(lo_view, view.file_name(), view)
 
 # --------------
 
@@ -106,16 +106,16 @@ class LatexOutlineEventHandler(EventListener):
         if view.file_name() == None:
             return
 
-        sym_view, sym_group = get_sidebar_view_and_group(view.window())
+        lo_view, lo_group = get_sidebar_view_and_group(view.window())
 
-        if sym_view != None:
+        if lo_view != None:
             # Note here is the only place that differs from on_activate_view
-            if sym_view.settings().get('current_file') != view.file_name():
-                sym_view.settings().set('current_file', view.file_name())
+            if lo_view.settings().get('current_file') != view.file_name():
+                lo_view.settings().set('current_file', view.file_name())
 
-        refresh_sym_view(sym_view, view.file_name(), view)
-        symlist = sym_view.settings().get('symlist')
-        delayed_sync_symview()
+        refresh_lo_view(lo_view, view.file_name(), view)
+        seclist = lo_view.settings().get('seclist')
+        delayed_sync_lo_view()
 
 # --------------
 
@@ -138,11 +138,11 @@ class LatexOutlineEventHandler(EventListener):
         if 'latexoutline' not in view.settings().get('syntax'):
             return
         window = view.window()
-        sym_view, sym_group = get_sidebar_view_and_group(window)
+        lo_view, lo_group = get_sidebar_view_and_group(window)
         
-        if sym_view:
-            sym_side = sym_view.settings().get('side')
-            lo_new_layout = reduce_layout(window, sym_view, sym_group, sym_side)
+        if lo_view:
+            lo_side = lo_view.settings().get('side')
+            lo_new_layout = reduce_layout(window, lo_view, lo_group, lo_side)
             window.settings().set('lo_new_layout', lo_new_layout)
 
     def on_close(self, view):
