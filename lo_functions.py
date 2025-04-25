@@ -60,7 +60,6 @@ def show(window, side="right"):
 def refresh_sym_view(sym_view, path, view):
 
     # Get the symbol list
-    # unfiltered_st_sym_list = view.get_symbols()
     unfiltered_st_sym_list = [(v.region,v.name) for v in view.symbol_regions() if v.kind[1]=='f']
     st_sym_list = filter_symlist(unfiltered_st_sym_list)
 

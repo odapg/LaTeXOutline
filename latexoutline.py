@@ -7,6 +7,7 @@ from sublime import Region, set_timeout_async
 from sublime_plugin import WindowCommand, TextCommand, EventListener
 from .lo_functions import * 
 import re
+import time
 
 # --------------------------------------------------------------------------------------#
 #                                                                                       #
@@ -111,8 +112,7 @@ class LatexOutlineEventHandler(EventListener):
                 return
             else:
                 sym_view.settings().set('current_file', view.file_name())
-            
-        refresh_sym_view(sym_view, view.file_name(), view)
+                refresh_sym_view(sym_view, view.file_name(), view)
 
 # --------------
 
@@ -149,4 +149,53 @@ class LatexOutlineEventHandler(EventListener):
                 copy_label(active_view, region_position)
             else:
                 goto_region(active_view, region_position)
+
+# --------------
+
+    def on_pre_close(self, view):
+        if 'latexoutline' not in view.settings().get('syntax'):
+            return
+        window = view.window()
+        sym_view, sym_group = get_sidebar_view_and_group(window)
+        sym_side = sym_view.settings().get('side')
+        time.sleep(0.1)
+        
+        if sym_view:    
+            current_layout = window.layout()
+            rows = current_layout["rows"]
+            cols = current_layout["cols"]
+            cells = current_layout["cells"]
+            x_min, y_min, x_max, y_max = cells[sym_group]
+            width = cols[x_min +1] - cols[x_min]
+            new_cells = [c for c in cells if c[2] <= x_min ] \
+                    + [ [c[0]-1, c[1], c[2]-1, c[3]] for c in cells if c[0] >= x_max] 
+            
+            if sym_side == "right":
+                new_cols = [c / (1-width) for c in cols if c < 1 - width ] \
+                        + [c for c in cols if c > 1 - width ]
+            elif sym_side == "left":
+                new_cols = [c for c in cols if c < width ] \
+                        + [(c - width) / (1-width) for c in cols if c >  width ]
+            else:
+                return
+
+            window.settings().set('lo_new_layout', {"cols": new_cols, "rows": rows, "cells": new_cells})
+            # window.set_layout({"cols": new_cols, "rows": rows, "cells": new_cells})
+
+    def on_close(self, view):
+        window = sublime.active_window()
+        if not window.settings().get('lo_new_layout'):
+            return
+        window.set_layout(window.settings().get('lo_new_layout'))
+        window.settings().erase('lo_new_layout')
+# --------------
+
+    def on_post_window_command(self, window, command_name, args):
+        if not window.active_view() or 'LaTeX.sublime-syntax' not in window.active_view().settings().get('syntax'):
+            return
+        if command_name != "show_panel":
+            return
+        if not args["panel"] or args["panel"] != "output.latextools":
+            return
+        print("youpi")
 
