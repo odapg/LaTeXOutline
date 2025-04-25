@@ -60,7 +60,8 @@ def show(window, side="right"):
 def refresh_sym_view(sym_view, path, view):
 
     # Get the symbol list
-    unfiltered_st_sym_list = view.get_symbols()
+    # unfiltered_st_sym_list = view.get_symbols()
+    unfiltered_st_sym_list = [(v.region,v.name) for v in view.symbol_regions() if v.kind[1]=='f']
     st_sym_list = filter_symlist(unfiltered_st_sym_list)
 
     l = []
@@ -86,8 +87,8 @@ def delayed_sync_symview():
     if not sym_view.settings().get('outline_sync'):
         return
     if sym_view != None:
-        unfiltered_symlist = view.get_symbols()
-        st_symlist = filter_symlist(unfiltered_symlist)
+        unfiltered_st_sym_list = [(v.region,v.name) for v in view.symbol_regions() if v.kind[1]=='f']
+        st_symlist = filter_symlist(unfiltered_st_sym_list)
         sync_symview(sym_view, st_symlist)
     view.settings().set('sync_in_progress', False)
 
