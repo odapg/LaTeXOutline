@@ -71,7 +71,7 @@ class LatexOutlineSyncEventHandler(EventListener):
         if not get_sidebar_status(view.window()):
             return
         
-        view.settings().set('sync_in_progress', loe)
+        view.settings().set('sync_in_progress', True)
         sublime.set_timeout_async(delayed_sync_lo_view,1000)
 
 # ----------------------------------------------------

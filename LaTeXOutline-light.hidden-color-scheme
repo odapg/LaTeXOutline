@@ -5,46 +5,46 @@
         "background": "hsl(180, 9%, 99%)",
         "invisibles": "hsl(180, 9%, 99%)",
         "foreground": "hsl(0, 0%, 20%)",
-        "line_highlight": "hsla(204, 10%, 86%, 0.7)",
+        "line_highlight": "hsl(204, 3%, 66%)",
 
     },
     "rules":
     [   {
             "name": "Part",
-            "scope": "part.latexoutline",
+            "scope": "part.latexoutline, bullet.part.latexoutline",
             "foreground": "hsl(350, 100%, 7%)",
             "font_style": "bold, glow",
         },
         {
             "name": "Chapter",
-            "scope": "chapter.latexoutline",
+            "scope": "chapter.latexoutline, bullet.chapter.latexoutline",
             "foreground": "hsl(351, 98%, 17%)",
             "font_style": "bold",
         },
         {
             "name": "Section",
-            "scope": "section.latexoutline",
+            "scope": "section.latexoutline, bullet.section.latexoutline",
             "foreground": "hsl(236, 70%, 28%)",
             "font_style": "bold",
         },
         {
             "name": "Subsection",
-            "scope": "subsection.latexoutline",
+            "scope": "subsection.latexoutline, bullet.subsection.latexoutline",
             "foreground": "hsl(135, 61%, 29%)",
         },
         {
             "name": "Subsubsection",
-            "scope": "subsubsection.latexoutline",
+            "scope": "subsubsection.latexoutline, bullet.subsubsection.latexoutline",
             "foreground": "hsl(278, 58%, 30%)",
         },
         {
             "name": "Paragraph",
-            "scope": "paragraph.latexoutline",
+            "scope": "paragraph.latexoutline, bullet.paragraph.latexoutline",
             "foreground": "hsl(30, 80%, 15%)",
         },
         {
             "name": "Frametitle",
-            "scope": "frametitle.latexoutline",
+            "scope": "frametitle.latexoutline, bullet.frametitle.latexoutline",
             "foreground": "hsl(194, 34%, 31%)",
         },
     ]
