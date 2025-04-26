@@ -7,6 +7,7 @@ from sublime import Region, set_timeout_async
 from sublime_plugin import WindowCommand, TextCommand, EventListener
 from .lo_functions import * 
 import re
+import os
 
 # --------------------------------------------------------------------------------------#
 #                                                                                       #
@@ -36,9 +37,9 @@ class LatexOutlineCloseSidebarCommand(WindowCommand):
 # ----------------------------------------------------
 
 class LatexOutlineRefreshCommand(TextCommand):
-    def run(self, edit, seclist=None, seckeys=None, path=None, active_view=None):
+    def run(self, edit, symlist=None, symkeys=None, path=None, active_view=None):
         self.view.erase(edit, Region(0, self.view.size()))
-        self.view.insert(edit, 0, "\n".join(seclist))
+        self.view.insert(edit, 0, "\n".join(symlist))
         # self.view.add_regions(
         #     "lines", 
         #     self.view.lines(Region(0, self.view.size())),
@@ -46,16 +47,26 @@ class LatexOutlineRefreshCommand(TextCommand):
         #     scope='region.bluish"',
         #     flags=128
         # )
-        self.view.settings().set('seclist', seclist)
-        self.view.settings().set('seckeys', seckeys)
+        self.view.settings().set('symlist', symlist)
+        self.view.settings().set('symkeys', symkeys)
         if active_view:
             self.view.settings().set('active_view', active_view)
         self.view.settings().set('current_file', path)
+        self.view.sel().clear()
+        if path:
+            aux_file = os.path.splitext(path)[0] + ".aux"
+            if os.path.exists(aux_file):
+                print("---------- Yeah, found it")
+            else:
+                print("---------- Nope")
         self.view.sel().clear()
 
 # ----------------------------------------------------
 
 class LatexOutlineSyncEventHandler(EventListener):
+
+# ------- Synchronizes the highlight in the outline depending on the cursor's place
+#         in the LaTeX file
 
     def on_selection_modified(self, view):
         if view.sheet().is_transient():
@@ -78,6 +89,8 @@ class LatexOutlineSyncEventHandler(EventListener):
 
 class LatexOutlineEventHandler(EventListener):
 
+# ------- Reset the outline when the user focuses on another LaTeX 
+
     def on_activated(self, view):
         if not get_sidebar_status(view.window()):
             return
@@ -90,13 +103,13 @@ class LatexOutlineEventHandler(EventListener):
         lo_view, lo_group = get_sidebar_view_and_group(view.window())
 
         if lo_view != None:
-            if lo_view.settings().get('current_file') == view.file_name() and view.file_name() != None:
+            if view.file_name() != None and lo_view.settings().get('current_file') == view.file_name():
                 return
             else:
                 lo_view.settings().set('current_file', view.file_name())
                 refresh_lo_view(lo_view, view.file_name(), view)
 
-# --------------
+# ------- Reset the outline when the LaTeX file is saved
 
     def on_pre_save(self, view):
         if not get_sidebar_status(view.window()):
@@ -114,10 +127,10 @@ class LatexOutlineEventHandler(EventListener):
                 lo_view.settings().set('current_file', view.file_name())
 
         refresh_lo_view(lo_view, view.file_name(), view)
-        seclist = lo_view.settings().get('seclist')
+        # symlist = lo_view.settings().get('symlist')
         delayed_sync_lo_view()
 
-# --------------
+# ------- Go to the corresponding place in the LaTeX file when the outline is clicked on
 
     def on_selection_modified(self, view):
         if 'latexoutline' not in view.settings().get('syntax'):
@@ -132,7 +145,7 @@ class LatexOutlineEventHandler(EventListener):
             else:
                 goto_region(active_view, region_position)
 
-# --------------
+# ------- Arranges the layout when one closes the outline manually
 
     def on_pre_close(self, view):
         if 'latexoutline' not in view.settings().get('syntax'):

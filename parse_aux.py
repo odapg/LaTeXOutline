@@ -1,6 +1,17 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+# from .lo_functions import chars
+lo_chars = {
+    'part': '■',
+    'chapter': '𑗕',
+    'section': '⏺',
+    'subsection': '⊛',
+    'subsubsection': '‣',
+    'paragraph': '⸱',
+    'frametitle': '▫'
+    }
+
 def extract_brace_group(s, start):
     """Extract content inside balanced braces starting at position `start`."""
     if s[start] != '{':
@@ -56,8 +67,8 @@ def parse_newlabel_line(line):
             'label_text': fields[0] if len(fields) > 0 else None,
             'page_number': fields[1] if len(fields) > 1 else None,
             'hyper_anchor': fields[2] if len(fields) > 2 else None,
-            'type_main': type_main,
-            'type_sub': type_sub,
+            'entry_type': type_main,
+            'num': type_sub,
             'extra': fields[4] if len(fields) > 4 else None,
         }
 
@@ -93,11 +104,15 @@ def parse_writefile_line(line):
                 if entry_title.startswith('}'):
                     entry_title = entry_title[1:].lstrip()
 
+                # Remove {\ignorespaces ...} if present
+                if entry_title.startswith('{\\ignorespaces'):
+                    entry_title = entry_title[14:-1].strip()
+
             return {
                 'source': 'writefile',
                 'file': file_type,
                 'entry_type': entry_type,
-                'entry_number': entry_number,
+                'num': entry_number,
                 'entry_title': entry_title,
                 'page_number': page_number
             }
@@ -127,19 +142,61 @@ def parse_aux_file(filename):
 
     return entries
 
+def print_sections(sec_data):        
+    print("-------- Sections")
+    for entry in sec_data: 
+        type = entry['entry_type'].title()
+        num = str(entry['num'])
+        title = entry['entry_title']
+        print(type + " " + num + ". " + title)
+
+def print_labels(lab_data):    
+    print("-------- Labels")
+    for entry in lab_data: 
+        type = entry['entry_type'].title()
+        num = "(" + str(entry['num']) + ")" if entry['entry_type'] == 'equation' else str(entry['num'])
+        label = entry['name']
+        print(type + " " + num + ": " + label + "  📋" )
+
+def print_raw_data(all_data):
+    for entry in all_data:
+        print("\n--- Entry ---")
+        for key, value in entry.items():
+            print(f"{key}: {value}")
+
+def print_all_data(all_data):
+    for entry in all_data:
+        if entry['source'] =='writefile' and entry['file'] == 'toc':
+            if entry['entry_type'] in section_types:
+                bullet = lo_chars[entry['entry_type']]
+            else:
+                bullet = "◦"
+            type = entry['entry_type'].title()
+            num = str(entry['num'])
+            title = entry['entry_title']
+            print(bullet + " " + num + ". " + title) # + " " + type
+        elif entry['source'] =='newlabel':
+            if entry['entry_type'] in section_types:
+                print("   ↪ " + "  📋" )    
+            else:
+                if entry['entry_type'] == 'equation':
+                    num = "(" + str(entry['num']) + ")"
+                    type = "Eq."
+                else:
+                    num = str(entry['num'])
+                    type = entry['entry_type'].title()
+                label = entry['name']
+                print(" ◦ " + type + " " + num + "  📋" )
 
 # Example usage
-if __name__ == '__main__':
-    aux_file = '/Users/glass/maths/Peut-être ?/Bergman-2025/Article/heat-controls.aux'  # Change to your actual .aux file path
-    section_types = ('part', 'chapter', 'section', 'subsection', 'subsubsection', 'paragraph', 'frametitle')
-    all_data = parse_aux_file(aux_file)
+#if __name__ == '__main__':
+#    aux_file = '/Users/glass/Documents/Dropbox/Fabio-Khai-Olivier/One-side/2025/1-OSBC-June2019.aux'
+#            #'/Users/glass/maths/Peut-être ?/Bergman-2025/Article/heat-controls.aux' 
+#    section_types = ('part', 'chapter', 'section', 'subsection', 'subsubsection', 'paragraph', 'frametitle')
+#    all_data = parse_aux_file(aux_file)
+#    # sec_data = [d for d in all_data if d['source'] =='writefile' and d['file'] == 'toc']
+#    # lab_data = [d for d in all_data if d['source'] =='newlabel']
+#    print_raw_data(all_data)
 
-    for entry in [d for d in all_data if d['source'] == 'writefile']:
-        type = entry['entry_type']
-        if type in section_types and entry['entry_number']:
-            print("\n--- Entry ---")
-            number = ' ' + entry['entry_number'] #if entry['entry_number'] else ''
-            print(entry['entry_type'].title()+ number)
-            print(entry['entry_title'])
-        # for key, value in entry.items():
-        #     print(f"{key}: {value}")
+
+
