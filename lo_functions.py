@@ -104,6 +104,7 @@ def find_selected_section():
     if len(lo_view.sel()) == 0:
         return None
     
+    lo_view_sel = lo_view.sel()[0]
     active_view_id = lo_view.settings().get('active_view')
     possible_views = [v for v in window.views() if v.id() == active_view_id]
     active_view = None if not possible_views else possible_views[0]
@@ -118,6 +119,7 @@ def find_selected_section():
         if not symkeys or not symlist or row == None:
             return None
         region_position = symkeys[row]
+        
         label_copy = False
         if 'bullet' in sel_scope:
             label_copy = True
@@ -134,7 +136,6 @@ def goto_region(active_view, region_position):
         active_view.sel().clear()
         active_view.sel().add(r)
         active_view.window().focus_view(active_view)
-        delayed_sync_lo_view()    
 
 # --------------------------
 

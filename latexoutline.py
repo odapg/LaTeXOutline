@@ -81,7 +81,8 @@ class LatexOutlineSyncEventHandler(EventListener):
             return
         if not get_sidebar_status(view.window()):
             return
-        
+            
+        print("zzz")
         view.settings().set('sync_in_progress', True)
         sublime.set_timeout_async(delayed_sync_lo_view,1000)
 
@@ -92,12 +93,12 @@ class LatexOutlineEventHandler(EventListener):
 # ------- Reset the outline when the user focuses on another LaTeX 
 
     def on_activated(self, view):
-        if not get_sidebar_status(view.window()):
+        # Apparently the console could pass the next test
+        if view.window().active_panel() == 'console':
             return
         if 'LaTeX.sublime-syntax' not in view.window().active_view().settings().get('syntax'):
             return
-        # Avoid error message when console opens, as console has group index -1
-        if view.window().get_view_index(view)[0] == -1:
+        if not get_sidebar_status(view.window()):
             return
 
         lo_view, lo_group = get_sidebar_view_and_group(view.window())
@@ -144,6 +145,7 @@ class LatexOutlineEventHandler(EventListener):
                 copy_label(active_view, region_position)
             else:
                 goto_region(active_view, region_position)
+                delayed_sync_lo_view()
 
 # ------- Arranges the layout when one closes the outline manually
 
