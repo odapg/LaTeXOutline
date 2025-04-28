@@ -63,8 +63,8 @@ def parse_newlabel_line(line):
 
         return {
             'source': 'newlabel',
-            'name': label_name,
-            'label_text': fields[0] if len(fields) > 0 else None,
+            'label': label_name,
+            'reference': fields[0] if len(fields) > 0 else None,
             'page_number': fields[1] if len(fields) > 1 else None,
             'hyper_anchor': fields[2] if len(fields) > 2 else None,
             'entry_type': type_main,
@@ -110,9 +110,9 @@ def parse_writefile_line(line):
 
             return {
                 'source': 'writefile',
-                'file': file_type,
+                'type': file_type,
                 'entry_type': entry_type,
-                'num': entry_number,
+                'reference': entry_number,
                 'entry_title': entry_title,
                 'page_number': page_number
             }
@@ -189,14 +189,14 @@ def print_all_data(all_data):
                 print(" ◦ " + type + " " + num + "  📋" )
 
 # Example usage
-#if __name__ == '__main__':
-#    aux_file = '/Users/glass/Documents/Dropbox/Fabio-Khai-Olivier/One-side/2025/1-OSBC-June2019.aux'
-#            #'/Users/glass/maths/Peut-être ?/Bergman-2025/Article/heat-controls.aux' 
-#    section_types = ('part', 'chapter', 'section', 'subsection', 'subsubsection', 'paragraph', 'frametitle')
-#    all_data = parse_aux_file(aux_file)
+if __name__ == '__main__':
+   aux_file = '/Users/glass/Documents/Dropbox/Fabio-Khai-Olivier/One-side/2025/1-OSBC-June2019.aux'
+           #'/Users/glass/maths/Peut-être ?/Bergman-2025/Article/heat-controls.aux' 
+   section_types = ('part', 'chapter', 'section', 'subsection', 'subsubsection', 'paragraph', 'frametitle')
+   all_data = parse_aux_file(aux_file)
 #    # sec_data = [d for d in all_data if d['source'] =='writefile' and d['file'] == 'toc']
 #    # lab_data = [d for d in all_data if d['source'] =='newlabel']
-#    print_raw_data(all_data)
+   print_raw_data(all_data)
 
 
 

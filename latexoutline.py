@@ -37,9 +37,10 @@ class LatexOutlineCloseSidebarCommand(WindowCommand):
 # ----------------------------------------------------
 
 class LatexOutlineRefreshCommand(TextCommand):
-    def run(self, edit, symlist=None, symkeys=None, path=None, active_view=None):
+    def run(self, edit, symlist=None, path=None, active_view=None):
         self.view.erase(edit, Region(0, self.view.size()))
-        self.view.insert(edit, 0, "\n".join(symlist))
+        symlist_contents = [item["content"] for item in symlist]
+        self.view.insert(edit, 0, "\n".join(symlist_contents))
         # self.view.add_regions(
         #     "lines", 
         #     self.view.lines(Region(0, self.view.size())),
@@ -48,17 +49,16 @@ class LatexOutlineRefreshCommand(TextCommand):
         #     flags=128
         # )
         self.view.settings().set('symlist', symlist)
-        self.view.settings().set('symkeys', symkeys)
         if active_view:
             self.view.settings().set('active_view', active_view)
         self.view.settings().set('current_file', path)
         self.view.sel().clear()
         if path:
             aux_file = os.path.splitext(path)[0] + ".aux"
-            if os.path.exists(aux_file):
-                print("---------- Yeah, found it")
-            else:
-                print("---------- Nope")
+            # if os.path.exists(aux_file):
+            #     print("---------- Yeah, found it")
+            # else:
+            #     print("---------- Nope")
         self.view.sel().clear()
 
 # ----------------------------------------------------

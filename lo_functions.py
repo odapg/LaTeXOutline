@@ -66,20 +66,18 @@ def refresh_lo_view(lo_view, path, view):
     unfiltered_st_sym_list = [(v.region,v.name) for v in view.symbol_regions() if v.kind[1]=='f']
     st_sym_list = filter_symlist(unfiltered_st_sym_list)
 
-    l = []
-    k = []
+    new_list = []
     active_view_id = view.id()
 
     for symbol in st_sym_list:
-        rng, sym = symbol
-        l.append(sym)
-        k.append((rng.a, rng.b))
+        rgn, sym = symbol
+        new_list.append({"region": (rgn.a, rgn.b), "content": sym})
     if lo_view != None:
+        print(new_list)
         lo_view.settings().erase('symlist')
-        lo_view.settings().erase('symkeys')
         lo_view.run_command(
             'latex_outline_refresh', 
-            {'symlist': l, 'symkeys': k, 'path': path, 'active_view': active_view_id})
+            {'symlist': new_list, 'path': path, 'active_view': active_view_id})
 
 # --------------------------
 
@@ -114,11 +112,12 @@ def find_selected_section():
         sel_scope = lo_view.scope_name(lo_view.sel()[0].begin())
         
         refresh_lo_view(lo_view, active_view.file_name(), active_view)
-        symkeys = lo_view.settings().get('symkeys')
+        # symkeys = lo_view.settings().get('symkeys')
         symlist = lo_view.settings().get('symlist')
-        if not symkeys or not symlist or row == None:
+        # if not symkeys or not symlist or row == None:
+        if not symlist or row == None:
             return None
-        region_position = symkeys[row]
+        region_position = symlist[row]["region"]
         
         label_copy = False
         if 'bullet' in sel_scope:
