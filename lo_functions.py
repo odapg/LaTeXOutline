@@ -23,15 +23,17 @@ lo_chars = {
 
 # ----------------------------------------------------------------
 
-# --------------------------------------------------------------------------------------#
-#                                                                                       #
-#                      Functions directly associated with commands                      #
-#                                                                                       #
-# --------------------------------------------------------------------------------------#
+# ----------------------------------------------------------------------------#
+#                                                                             #
+#                 Functions directly associated with commands                 #
+#                                                                             #
+# ----------------------------------------------------------------------------#
 
-def show(window, side="right"):
+
+def show_outline(window, side="right", type="toc"):
     """
-    Toggles the outline view. Filling it will be taken care of by the EventHandler.
+    Toggles the outline view. 
+    Filling it will be taken care of by LatexOutlineEventHandler.
     """
 
     # Closes the outline view if it already exists
@@ -40,7 +42,7 @@ def show(window, side="right"):
         previous_side = lo_view.settings().get('side')
         window.run_command('latex_outline_close_sidebar')
         if side != previous_side:
-            show(window, side=side)
+            show_outline(window, side=side)
         return
 
     # Creates the outline view otherwise
@@ -50,6 +52,7 @@ def show(window, side="right"):
     name = u"𝌆 {0}".format(view_name)
     new_view.set_name(name)
     new_view.settings().set('side', side)
+    new_view.settings().set('type', type)
 
     arrange_layout(new_view, side)
     
@@ -60,10 +63,17 @@ def show(window, side="right"):
 
 # --------------------------
 
-def refresh_lo_view(lo_view, path, view):
+def refresh_lo_view(lo_view, path, view, type):
 
     # Get the section list
-    unfiltered_st_sym_list = [(v.region,v.name) for v in view.symbol_regions() if v.kind[1]=='f']
+    if type == "toc":
+        unfiltered_st_sym_list = [
+            (v.region, v.name) for v in view.symbol_regions() if v.kind[1] == 'f'
+        ]
+    else:
+        unfiltered_st_sym_list = [
+            (v.region, v.name) for v in view.symbol_regions()
+        ]
     st_sym_list = filter_symlist(unfiltered_st_sym_list)
 
     new_list = []
@@ -71,13 +81,19 @@ def refresh_lo_view(lo_view, path, view):
 
     for symbol in st_sym_list:
         rgn, sym = symbol
-        new_list.append({"region": (rgn.a, rgn.b), "content": sym})
-    if lo_view != None:
+        new_list.append(
+            
+            {"region": (rgn.a, rgn.b), 
+             "content": sym}
+        )
+    if lo_view is not None:
         print(new_list)
         lo_view.settings().erase('symlist')
-        lo_view.run_command(
-            'latex_outline_refresh', 
-            {'symlist': new_list, 'path': path, 'active_view': active_view_id})
+        lo_view.run_command('latex_outline_refresh', 
+                            {'symlist': new_list,
+                             'path': path,
+                             'active_view': active_view_id}
+                            )
 
 # --------------------------
 
@@ -86,8 +102,10 @@ def delayed_sync_lo_view():
     lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
     if not lo_view or not lo_view.settings().get('outline_sync'):
         return
-    if lo_view != None:
-        unfiltered_st_sym_list = [(v.region,v.name) for v in view.symbol_regions() if v.kind[1]=='f']
+    if lo_view is not None:
+        unfiltered_st_sym_list = [
+            (v.region, v.name) for v in view.symbol_regions() 
+            if v.kind[1] == 'f']
         st_symlist = filter_symlist(unfiltered_st_sym_list)
         sync_lo_view(lo_view, st_symlist)
     view.settings().set('sync_in_progress', False)
@@ -107,15 +125,16 @@ def find_selected_section():
     possible_views = [v for v in window.views() if v.id() == active_view_id]
     active_view = None if not possible_views else possible_views[0]
 
-    if active_view != None:
+    if active_view is not None:
         (row, col) = lo_view.rowcol(lo_view.sel()[0].begin())
         sel_scope = lo_view.scope_name(lo_view.sel()[0].begin())
         
-        refresh_lo_view(lo_view, active_view.file_name(), active_view)
+        type = lo_view.settings().get('type')
+        refresh_lo_view(lo_view, active_view.file_name(), active_view, type)
         # symkeys = lo_view.settings().get('symkeys')
         symlist = lo_view.settings().get('symlist')
         # if not symkeys or not symlist or row == None:
-        if not symlist or row == None:
+        if not symlist or row is None:
             return None
         region_position = symlist[row]["region"]
         
@@ -140,17 +159,24 @@ def goto_region(active_view, region_position):
 
 def copy_label(active_view, region_position):
     if active_view and region_position:
-        text_from_region = active_view.substr(sublime.Region(region_position[1],active_view.size()))
+        text_from_region = active_view.substr(
+            sublime.Region(region_position[1], active_view.size()))
 
         label_match = re.search(r'\\label\{([^}]*)\}', text_from_region)
         command_match = re.search(r'\\\w*\{', text_from_region)
-        if label_match and (not command_match or label_match.start() <= command_match.start()):
+        if label_match and (
+          not command_match
+          or label_match.start() <= command_match.start()
+        ):
             label = label_match.group(1)
             sublime.set_clipboard(label)
-            sublime.active_window().status_message(f" ✓ Copied reference '{label}' to the clipboard")
+            sublime.active_window().status_message(
+                f" ✓ Copied reference '{label}' to the clipboard")
         else:
-            section = active_view.substr(sublime.Region(region_position[0],region_position[1]))
-            sublime.active_window().status_message(f" ⨉ No \\label found for '{section}'")
+            section = active_view.substr(
+                sublime.Region(region_position[0], region_position[1]))
+            sublime.active_window().status_message(
+                f" ⨉ No \\label found for '{section}'")
 
 # --------------------------
 
@@ -161,12 +187,12 @@ def reduce_layout(window, lo_view, lo_group, sym_side):
     cols = current_layout["cols"]
     cells = current_layout["cells"]
     x_min, y_min, x_max, y_max = cells[lo_group]
-    width = cols[x_min +1] - cols[x_min]
-    new_cells = [c for c in cells if c[2] <= x_min ] \
-            + [ [c[0]-1, c[1], c[2]-1, c[3]] for c in cells if c[0] >= x_max] 
+    width = cols[x_min + 1] - cols[x_min]
+    new_cells = [c for c in cells if c[2] <= x_min] \
+        + [[c[0]-1, c[1], c[2]-1, c[3]] for c in cells if c[0] >= x_max] 
     
     if sym_side == "right":
-        new_cols = [c / (1-width) for c in cols if c < 1 - width ] \
+        new_cols = [c / (1-width) for c in cols if c < 1 - width] \
                 + [c for c in cols if c > 1 - width ]
     elif sym_side == "left":
         new_cols = [c for c in cols if c < width ] \
@@ -176,11 +202,11 @@ def reduce_layout(window, lo_view, lo_group, sym_side):
 
     return {"cols": new_cols, "rows": rows, "cells": new_cells}
 
-# --------------------------------------------------------------------------------------#
-#                                                                                       #
-#                                Intermediate functions                                 #
-#                                                                                       #
-# --------------------------------------------------------------------------------------#
+# --------------------------------------------------------------------------#
+#                                                                           #
+#                          Intermediate functions                           #
+#                                                                           #
+# --------------------------------------------------------------------------#
 
 
 def sync_lo_view(lo_view, st_symlist):
@@ -197,7 +223,8 @@ def sync_lo_view(lo_view, st_symlist):
     lo_view.show_at_center(lo_point_start, animate=True)
     lo_view.sel().clear()
     lo_view.sel().add(lo_point_start)
-    # For some reason, the following makes the outline highlighting more reliable.
+    # For some reason, 
+    # the following makes the outline highlighting more reliable.
     lo_view.set_syntax_file('Packages/LaTeXOutline/latexoutline.sublime-syntax')
 
 # --------------------------
@@ -209,9 +236,11 @@ def create_outline_view(window):
     view.set_scratch(True)
     
     if view.settings().get('outline_inherit_color_scheme'):
-        view.settings().set('color_scheme', active_view.settings().get('color_scheme'))
+        view.settings().set(
+            'color_scheme', active_view.settings().get('color_scheme'))
     else:
-        view.settings().add_on_change('color_scheme', lambda: set_proper_scheme(view))
+        view.settings().add_on_change(
+            'color_scheme', lambda: set_proper_scheme(view))
         
     return view
 
@@ -309,11 +338,11 @@ def filter_symlist(unfiltered_symlist):
     part_list = [x for x in unfiltered_symlist if x[1].startswith("Part:")]
     chapter_list = [x for x in unfiltered_symlist if x[1].startswith("Chapter:")]
     
-    shift =0
+    shift = 0
     if len(part_list) > 0:
-        shift=2
+        shift = 2
     elif len(chapter_list) > 0:
-        shift=1
+        shift = 1
 
     rs = ' ' * shift + lo_chars['section'] + ' '
     rss = ' ' * (shift + 1) + lo_chars['subsection'] + ' '

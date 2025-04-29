@@ -9,15 +9,15 @@ from .lo_functions import *
 import re
 import os
 
-# --------------------------------------------------------------------------------------#
-#                                                                                       #
-#                                     MAIN COMMANDS                                     #
-#                                                                                       #
-# --------------------------------------------------------------------------------------#
+# ----------------------------------------------------------------------------#
+#                                                                             #
+#                                MAIN COMMANDS                                #
+#                                                                             #
+# ----------------------------------------------------------------------------#
 
 class LatexOutlineCommand(WindowCommand):
-    def run(self, side="right"):
-        show(self.window, side=side)
+    def run(self, side="right", type="toc"):
+        show_outline(self.window, side=side, type=type)
 
 # ----------------------------------------------------
 
@@ -84,7 +84,7 @@ class LatexOutlineSyncEventHandler(EventListener):
             
         print("zzz")
         view.settings().set('sync_in_progress', True)
-        sublime.set_timeout_async(delayed_sync_lo_view,1000)
+        sublime.set_timeout_async(delayed_sync_lo_view, 1000)
 
 # ----------------------------------------------------
 
@@ -93,7 +93,7 @@ class LatexOutlineEventHandler(EventListener):
 # ------- Reset the outline when the user focuses on another LaTeX 
 
     def on_activated(self, view):
-        # Apparently the console could pass the next test
+        # Apparently the console could pass the next tests
         if view.window().active_panel() == 'console':
             return
         if 'LaTeX.sublime-syntax' not in view.window().active_view().settings().get('syntax'):
@@ -103,12 +103,14 @@ class LatexOutlineEventHandler(EventListener):
 
         lo_view, lo_group = get_sidebar_view_and_group(view.window())
 
-        if lo_view != None:
-            if view.file_name() != None and lo_view.settings().get('current_file') == view.file_name():
+        if lo_view is not None:
+            if (view.file_name() is not None and 
+                    lo_view.settings().get('current_file') == view.file_name()):
                 return
             else:
                 lo_view.settings().set('current_file', view.file_name())
-                refresh_lo_view(lo_view, view.file_name(), view)
+                type = lo_view.settings().get('type')
+                refresh_lo_view(lo_view, view.file_name(), view, type)
 
 # ------- Reset the outline when the LaTeX file is saved
 
@@ -127,7 +129,8 @@ class LatexOutlineEventHandler(EventListener):
             if lo_view.settings().get('current_file') != view.file_name():
                 lo_view.settings().set('current_file', view.file_name())
 
-        refresh_lo_view(lo_view, view.file_name(), view)
+        type = lo_view.settings().get('type')
+        refresh_lo_view(lo_view, view.file_name(), view, type)
         # symlist = lo_view.settings().get('symlist')
         delayed_sync_lo_view()
 
