@@ -16,8 +16,8 @@ import os
 # ----------------------------------------------------------------------------#
 
 class LatexOutlineCommand(WindowCommand):
-    def run(self, side="right", type="toc"):
-        show_outline(self.window, side=side, type=type)
+    def run(self, side="right", outline_type="toc"):
+        show_outline(self.window, side=side, outline_type=outline_type)
 
 # ----------------------------------------------------
 
@@ -109,8 +109,8 @@ class LatexOutlineEventHandler(EventListener):
                 return
             else:
                 lo_view.settings().set('current_file', view.file_name())
-                type = lo_view.settings().get('type')
-                refresh_lo_view(lo_view, view.file_name(), view, type)
+                outline_type = lo_view.settings().get('outline_type')
+                refresh_lo_view(lo_view, view.file_name(), view, outline_type)
 
 # ------- Reset the outline when the LaTeX file is saved
 
@@ -125,12 +125,11 @@ class LatexOutlineEventHandler(EventListener):
         lo_view, lo_group = get_sidebar_view_and_group(view.window())
 
         if lo_view != None:
-            # Note here is the only place that differs from on_activate_view
             if lo_view.settings().get('current_file') != view.file_name():
                 lo_view.settings().set('current_file', view.file_name())
 
-        type = lo_view.settings().get('type')
-        refresh_lo_view(lo_view, view.file_name(), view, type)
+        outline_type = lo_view.settings().get('outline_type')
+        refresh_lo_view(lo_view, view.file_name(), view, outline_type)
         # symlist = lo_view.settings().get('symlist')
         delayed_sync_lo_view()
 

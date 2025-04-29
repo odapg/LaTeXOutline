@@ -11,6 +11,7 @@ variables:
   sssec_char: '‣'
   par_char: '⸱'
   ftitle_char: '▫'
+  label_char: '›'
 
 contexts:
   main:
@@ -42,3 +43,7 @@ contexts:
       captures:
         1: bullet.frametitle.latexoutline
         2: frametitle.latexoutline
+    - match: ({{label_char}})([^\n]+)
+      captures:
+        1: bullet.label.latexoutline
+        2: label.latexoutline

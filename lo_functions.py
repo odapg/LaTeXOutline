@@ -18,7 +18,8 @@ lo_chars = {
     'subsection': '⊛',
     'subsubsection': '‣',
     'paragraph': '⸱',
-    'frametitle': '▫'
+    'frametitle': '▫',
+    'label': '›'
     }
 
 # ----------------------------------------------------------------
@@ -30,7 +31,7 @@ lo_chars = {
 # ----------------------------------------------------------------------------#
 
 
-def show_outline(window, side="right", type="toc"):
+def show_outline(window, side="right", outline_type="toc"):
     """
     Toggles the outline view. 
     Filling it will be taken care of by LatexOutlineEventHandler.
@@ -52,7 +53,7 @@ def show_outline(window, side="right", type="toc"):
     name = u"𝌆 {0}".format(view_name)
     new_view.set_name(name)
     new_view.settings().set('side', side)
-    new_view.settings().set('type', type)
+    new_view.settings().set('outline_type', outline_type)
 
     arrange_layout(new_view, side)
     
@@ -63,18 +64,11 @@ def show_outline(window, side="right", type="toc"):
 
 # --------------------------
 
-def refresh_lo_view(lo_view, path, view, type):
+def refresh_lo_view(lo_view, path, view, outline_type):
 
     # Get the section list
-    if type == "toc":
-        unfiltered_st_sym_list = [
-            (v.region, v.name) for v in view.symbol_regions() if v.kind[1] == 'f'
-        ]
-    else:
-        unfiltered_st_sym_list = [
-            (v.region, v.name) for v in view.symbol_regions()
-        ]
-    st_sym_list = filter_symlist(unfiltered_st_sym_list)
+    unfiltered_st_sym_list = get_st_symbols(view, outline_type)
+    st_sym_list = filter_symlist(unfiltered_st_sym_list, outline_type)
 
     new_list = []
     active_view_id = view.id()
@@ -103,10 +97,9 @@ def delayed_sync_lo_view():
     if not lo_view or not lo_view.settings().get('outline_sync'):
         return
     if lo_view is not None:
-        unfiltered_st_sym_list = [
-            (v.region, v.name) for v in view.symbol_regions() 
-            if v.kind[1] == 'f']
-        st_symlist = filter_symlist(unfiltered_st_sym_list)
+        outline_type = lo_view.settings().get('outline_type')
+        unfiltered_st_sym_list = get_st_symbols(view, outline_type)
+        st_symlist = filter_symlist(unfiltered_st_sym_list, outline_type)
         sync_lo_view(lo_view, st_symlist)
     view.settings().set('sync_in_progress', False)
 
@@ -129,8 +122,8 @@ def find_selected_section():
         (row, col) = lo_view.rowcol(lo_view.sel()[0].begin())
         sel_scope = lo_view.scope_name(lo_view.sel()[0].begin())
         
-        type = lo_view.settings().get('type')
-        refresh_lo_view(lo_view, active_view.file_name(), active_view, type)
+        outline_type = lo_view.settings().get('outline_type')
+        refresh_lo_view(lo_view, active_view.file_name(), active_view, outline_type)
         # symkeys = lo_view.settings().get('symkeys')
         symlist = lo_view.settings().get('symlist')
         # if not symkeys or not symlist or row == None:
@@ -329,12 +322,17 @@ def get_sidebar_status(window):
 
 # --------------------------
 
-def filter_symlist(unfiltered_symlist):
+def filter_symlist(unfiltered_symlist, outline_type):
     '''
     Filters the symlist to only show LaTeX sections in indented manner
     '''
-    pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle):.*'
-    sym_list = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
+    if outline_type == "toc":
+        pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle):.*'
+        sym_list = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
+    else:
+        pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle):.*|[^\\].*'
+        sym_list = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
+        
     part_list = [x for x in unfiltered_symlist if x[1].startswith("Part:")]
     chapter_list = [x for x in unfiltered_symlist if x[1].startswith("Chapter:")]
     
@@ -350,20 +348,54 @@ def filter_symlist(unfiltered_symlist):
     rpar = ' ' * (shift + 3) + lo_chars['paragraph'] + ' '
     rpt = lo_chars['part'] + ' '
     rch = ' ' + lo_chars['chapter'] + ' ' if shift==2 else lo_chars['chapter'] + ' '
-    rftt= lo_chars['frametitle'] + ' '
+    rftt = lo_chars['frametitle'] + ' '
+    rlab = '  ' + lo_chars['label']
 
-    cleaned_sym_list = [
-        (i, j.replace('\n','') \
-            .replace('Part: ', rpt) \
-            .replace('Chapter: ', rch) \
-            .replace('Section: ', rs) \
-            .replace('Subsection: ', rss) \
-            .replace('Subsubsection: ', rsss) \
-            .replace('Paragraph: ', rpar) \
-            .replace('Frametitle: ', rftt) ) for i,j in sym_list
-    ]
+    print(sym_list)
+
+    cleaned_sym_list = []
+    for i in sym_list:
+        rgn = i[0]
+        sym = i[1]
+        if sym.startswith('Part: '):
+            new_sym = rpt + sym[6:]
+        elif sym.startswith('Chapter: '):
+            new_sym = rch + sym[9:]
+        elif sym.startswith('Section: '):
+            new_sym = rs + sym[9:]
+        elif sym.startswith('Subsection: '):
+            new_sym = rss + sym[12:]
+        elif sym.startswith('Subsubsection: '):
+            new_sym = rsss + sym[15:]
+        else:
+            new_sym = rlab + sym
+
+        cleaned_sym_list.append((rgn, new_sym))
+    # cleaned_sym_list = [
+    #     (i, j.replace('\n','') \
+    #         .replace('Part: ', rpt) \
+    #         .replace('Chapter: ', rch) \
+    #         .replace('Section: ', rs) \
+    #         .replace('Subsection: ', rss) \
+    #         .replace('Subsubsection: ', rsss) \
+    #         .replace('Paragraph: ', rpar) \
+    #         .replace('Frametitle: ', rftt) ) for i,j in sym_list
+    # ]
     return cleaned_sym_list
 
+# --------------------------
+
+def get_st_symbols(view, outline_type):
+    if outline_type == "toc":
+        unfiltered_st_sym_list = [
+            (v.region, v.name) for v in view.symbol_regions() if v.kind[1] == 'f'
+        ]
+    else:
+        unfiltered_st_sym_list = [
+            (v.region, v.name) for v in view.symbol_regions()
+            if v.kind[1] == 'f' or v.kind[1] == 'l'
+        ]
+    return unfiltered_st_sym_list
 
 # --------------------------
 

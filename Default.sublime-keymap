@@ -3,11 +3,11 @@
 //
     { "keys": ["super+j", "a"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-        "args": {"side": "left", "type": "toc"},
+        "args": {"side": "left", "outline_type": "full"},
     },
     { "keys": ["super+j", "e"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-        "args": {"side": "right", "type": "toc"}
+        "args": {"side": "right", "outline_type": "toc"}
     },
     { "keys": ["super+j", "z"], "command": "latex_outline_close_sidebar"},
 
