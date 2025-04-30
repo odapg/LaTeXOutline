@@ -10,7 +10,7 @@ from sublime import Region
 
 # -------------------------- Characters --------------------------
 # Changes here should also be reported in latexoutline.sublime-syntax
-# Suggestions: ▪ ⌑ ⦾ ⁌ ∙ ◦ ⦿ ■ 𑗕 ◉ • ⸱ ‣ ▫ ⊙ ⊛ ⏺
+# Suggestions: ▪ ⌑ ⦾ ⁌ ∙ ◦ ⦿ ■ 𑗕 ◉ • ⸱ ‣ ▫ ⊙ ⊛ ⏺ ⏿
 lo_chars = {
     'part': '■',
     'chapter': '𑗕',
@@ -19,8 +19,8 @@ lo_chars = {
     'subsubsection': '‣',
     'paragraph': '⸱',
     'frametitle': '▫',
-    'label': '›'
-    }
+    'label': '›',
+    'copy': '❐',}
 
 # ----------------------------------------------------------------
 
@@ -34,7 +34,8 @@ lo_chars = {
 def show_outline(window, side="right", outline_type="toc"):
     """
     Toggles the outline view. 
-    Filling it will be taken care of by LatexOutlineEventHandler.
+    Filling it will be taken care of by LatexOutlineEventHandler which in
+    particular calls the LatexOutlineRefresh command.
     """
 
     # Closes the outline view if it already exists
@@ -65,23 +66,14 @@ def show_outline(window, side="right", outline_type="toc"):
 # --------------------------
 
 def refresh_lo_view(lo_view, path, view, outline_type):
+    '''Prepare the use of latex_outline_refresh command'''
 
     # Get the section list
     unfiltered_st_sym_list = get_st_symbols(view, outline_type)
-    st_sym_list = filter_symlist(unfiltered_st_sym_list, outline_type)
-
-    new_list = []
+    new_list = filter_and_decorate_symlist(unfiltered_st_sym_list, outline_type)
     active_view_id = view.id()
 
-    for symbol in st_sym_list:
-        rgn, sym = symbol
-        new_list.append(
-            
-            {"region": (rgn.a, rgn.b), 
-             "content": sym}
-        )
     if lo_view is not None:
-        print(new_list)
         lo_view.settings().erase('symlist')
         lo_view.run_command('latex_outline_refresh', 
                             {'symlist': new_list,
@@ -99,44 +91,10 @@ def delayed_sync_lo_view():
     if lo_view is not None:
         outline_type = lo_view.settings().get('outline_type')
         unfiltered_st_sym_list = get_st_symbols(view, outline_type)
-        st_symlist = filter_symlist(unfiltered_st_sym_list, outline_type)
-        sync_lo_view(lo_view, st_symlist)
+        new_list = filter_and_decorate_symlist(unfiltered_st_sym_list, outline_type)
+        sync_lo_view(lo_view, new_list)
     view.settings().set('sync_in_progress', False)
 
-
-# --------------------------
-
-def find_selected_section():
-    window = sublime.active_window()
-    lo_view, lo_group = get_sidebar_view_and_group(window)
-
-    if len(lo_view.sel()) == 0:
-        return None
-    
-    lo_view_sel = lo_view.sel()[0]
-    active_view_id = lo_view.settings().get('active_view')
-    possible_views = [v for v in window.views() if v.id() == active_view_id]
-    active_view = None if not possible_views else possible_views[0]
-
-    if active_view is not None:
-        (row, col) = lo_view.rowcol(lo_view.sel()[0].begin())
-        sel_scope = lo_view.scope_name(lo_view.sel()[0].begin())
-        
-        outline_type = lo_view.settings().get('outline_type')
-        refresh_lo_view(lo_view, active_view.file_name(), active_view, outline_type)
-        # symkeys = lo_view.settings().get('symkeys')
-        symlist = lo_view.settings().get('symlist')
-        # if not symkeys or not symlist or row == None:
-        if not symlist or row is None:
-            return None
-        region_position = symlist[row]["region"]
-        
-        label_copy = False
-        if 'bullet' in sel_scope:
-            label_copy = True
-        return (active_view, region_position, label_copy)
-    else:
-        return None
 
 # --------------------------
 
@@ -147,6 +105,7 @@ def goto_region(active_view, region_position):
         active_view.sel().clear()
         active_view.sel().add(r)
         active_view.window().focus_view(active_view)
+
 
 # --------------------------
 
@@ -202,13 +161,13 @@ def reduce_layout(window, lo_view, lo_group, sym_side):
 # --------------------------------------------------------------------------#
 
 
-def sync_lo_view(lo_view, st_symlist):
+def sync_lo_view(lo_view, new_list):
     '''
     sync the outline view with current file location
     '''
     view = sublime.active_window().active_view()
     point = view.sel()[0].end()
-    range_lows = [view.line(range.a).begin() for range, symbol in st_symlist]
+    range_lows = [view.line(item['region'][0]).begin() for item in new_list]
     range_sorted = [0] + range_lows[1:len(range_lows)] + [view.size()]
     lo_line = binary_search(range_sorted, point) - 1
 
@@ -322,7 +281,7 @@ def get_sidebar_status(window):
 
 # --------------------------
 
-def filter_symlist(unfiltered_symlist, outline_type):
+def filter_and_decorate_symlist(unfiltered_symlist, outline_type):
     '''
     Filters the symlist to only show LaTeX sections in indented manner
     '''
@@ -350,10 +309,11 @@ def filter_symlist(unfiltered_symlist, outline_type):
     rch = ' ' + lo_chars['chapter'] + ' ' if shift==2 else lo_chars['chapter'] + ' '
     rftt = lo_chars['frametitle'] + ' '
     rlab = '  ' + lo_chars['label']
+    rcopy = ' ' + lo_chars['copy'] +' '
 
     print(sym_list)
 
-    cleaned_sym_list = []
+    new_list = []
     for i in sym_list:
         rgn = i[0]
         sym = i[1]
@@ -366,22 +326,17 @@ def filter_symlist(unfiltered_symlist, outline_type):
         elif sym.startswith('Subsection: '):
             new_sym = rss + sym[12:]
         elif sym.startswith('Subsubsection: '):
-            new_sym = rsss + sym[15:]
+            new_sym = rsss + sym[15:] 
         else:
-            new_sym = rlab + sym
+            new_sym = rlab + sym + rcopy
 
-        cleaned_sym_list.append((rgn, new_sym))
-    # cleaned_sym_list = [
-    #     (i, j.replace('\n','') \
-    #         .replace('Part: ', rpt) \
-    #         .replace('Chapter: ', rch) \
-    #         .replace('Section: ', rs) \
-    #         .replace('Subsection: ', rss) \
-    #         .replace('Subsubsection: ', rsss) \
-    #         .replace('Paragraph: ', rpar) \
-    #         .replace('Frametitle: ', rftt) ) for i,j in sym_list
-    # ]
-    return cleaned_sym_list
+        new_list.append(
+            {"region": (rgn.a, rgn.b), 
+             "content": sym,
+             "fancy_content": new_sym}
+        )
+        
+    return new_list
 
 # --------------------------
 

@@ -38,8 +38,9 @@ class LatexOutlineCloseSidebarCommand(WindowCommand):
 
 class LatexOutlineRefreshCommand(TextCommand):
     def run(self, edit, symlist=None, path=None, active_view=None):
+        
         self.view.erase(edit, Region(0, self.view.size()))
-        symlist_contents = [item["content"] for item in symlist]
+        symlist_contents = [item["fancy_content"] for item in symlist]
         self.view.insert(edit, 0, "\n".join(symlist_contents))
         # self.view.add_regions(
         #     "lines", 
@@ -53,8 +54,8 @@ class LatexOutlineRefreshCommand(TextCommand):
             self.view.settings().set('active_view', active_view)
         self.view.settings().set('current_file', path)
         self.view.sel().clear()
-        if path:
-            aux_file = os.path.splitext(path)[0] + ".aux"
+        # if path:
+            # aux_file = os.path.splitext(path)[0] + ".aux"
             # if os.path.exists(aux_file):
             #     print("---------- Yeah, found it")
             # else:
@@ -81,8 +82,7 @@ class LatexOutlineSyncEventHandler(EventListener):
             return
         if not get_sidebar_status(view.window()):
             return
-            
-        print("zzz")
+
         view.settings().set('sync_in_progress', True)
         sublime.set_timeout_async(delayed_sync_lo_view, 1000)
 
@@ -141,13 +141,47 @@ class LatexOutlineEventHandler(EventListener):
         if view.window().get_view_index(view)[0] == -1:
             return
 
-        if found_selection := find_selected_section():
-            active_view, region_position, label_copy = found_selection
-            if label_copy:
+        window = sublime.active_window()
+        lo_view = view
+
+        # Get the LaTeX view from the settings
+        active_view_id = lo_view.settings().get('active_view')
+        possible_views = [v for v in window.views() if v.id() == active_view_id]
+        active_view = None if not possible_views else possible_views[0]
+
+        if active_view is not None:
+            # Position and nature of the selected item in the outline
+            if len(lo_view.sel()) == 0:
+                return None
+            lo_view_sel = lo_view.sel()[0]
+            (row, col) = lo_view.rowcol(lo_view.sel()[0].begin())
+            sel_scope = lo_view.scope_name(lo_view.sel()[0].begin())
+            
+            if 'copy' in sel_scope:
+                symlist = lo_view.settings().get('symlist')
+                label = symlist[row]["content"]
+                sublime.set_clipboard(label)
+                sublime.active_window().status_message(
+                f" ✓ Copied reference '{label}' to the clipboard")
+                return
+
+            # Refresh the outline to get the current regions
+            outline_type = lo_view.settings().get('outline_type')
+            refresh_lo_view(lo_view, active_view.file_name(), active_view, outline_type)
+            symlist = lo_view.settings().get('symlist')
+
+            # Get the region corresponding to the selected item
+            if not symlist or row is None:
+                return None
+            region_position = symlist[row]["region"]
+            
+            label_copy = False
+            if 'bullet' in sel_scope:
                 copy_label(active_view, region_position)
             else:
                 goto_region(active_view, region_position)
                 delayed_sync_lo_view()
+                
 
 # ------- Arranges the layout when one closes the outline manually
 

@@ -35,7 +35,7 @@
         {
             "name": "Subsubsection",
             "scope": "subsubsection.latexoutline, bullet.subsubsection.latexoutline",
-            "foreground": "rgb(240, 255, 220)",
+            "foreground": "rgb(246, 196, 253)",
         },
         {
             "name": "Paragraph",
