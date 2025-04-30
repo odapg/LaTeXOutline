@@ -42,26 +42,14 @@ class LatexOutlineRefreshCommand(TextCommand):
         self.view.erase(edit, Region(0, self.view.size()))
         symlist_contents = [item["fancy_content"] for item in symlist]
         self.view.insert(edit, 0, "\n".join(symlist_contents))
-        # self.view.add_regions(
-        #     "lines", 
-        #     self.view.lines(Region(0, self.view.size())),
-        #     icon='Packages/LaTeXOutline/chevron.png',
-        #     scope='region.bluish"',
-        #     flags=128
-        # )
+       
         self.view.settings().set('symlist', symlist)
         if active_view:
             self.view.settings().set('active_view', active_view)
         self.view.settings().set('current_file', path)
         self.view.sel().clear()
-        # if path:
-            # aux_file = os.path.splitext(path)[0] + ".aux"
-            # if os.path.exists(aux_file):
-            #     print("---------- Yeah, found it")
-            # else:
-            #     print("---------- Nope")
-        self.view.sel().clear()
-
+       
+       
 # ----------------------------------------------------
 
 class LatexOutlineSyncEventHandler(EventListener):

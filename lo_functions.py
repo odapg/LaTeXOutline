@@ -301,15 +301,15 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type):
     elif len(chapter_list) > 0:
         shift = 1
 
+    rpt = lo_chars['part'] + ' '
+    rch = ' ' + lo_chars['chapter'] + ' ' if shift==2 else lo_chars['chapter'] + ' '
     rs = ' ' * shift + lo_chars['section'] + ' '
     rss = ' ' * (shift + 1) + lo_chars['subsection'] + ' '
     rsss = ' ' * (shift + 2) + lo_chars['subsubsection'] + ' '
     rpar = ' ' * (shift + 3) + lo_chars['paragraph'] + ' '
-    rpt = lo_chars['part'] + ' '
-    rch = ' ' + lo_chars['chapter'] + ' ' if shift==2 else lo_chars['chapter'] + ' '
     rftt = lo_chars['frametitle'] + ' '
     rlab = '  ' + lo_chars['label']
-    rcopy = ' ' + lo_chars['copy'] +' '
+    rcopy = ' ' + lo_chars['copy'] + ' '
 
     print(sym_list)
 
@@ -319,19 +319,29 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type):
         sym = i[1]
         if sym.startswith('Part: '):
             new_sym = rpt + sym[6:]
+            type = "part"
         elif sym.startswith('Chapter: '):
             new_sym = rch + sym[9:]
+            type = "chapter"
         elif sym.startswith('Section: '):
             new_sym = rs + sym[9:]
+            type = "section"
         elif sym.startswith('Subsection: '):
             new_sym = rss + sym[12:]
+            type = "subsection"
         elif sym.startswith('Subsubsection: '):
-            new_sym = rsss + sym[15:] 
+            new_sym = rsss + sym[15:]
+            type = "subsubsection"
+        elif sym.startswith('Paragraph: '):
+            new_sym = rpar + sym[11:]
+            type = "paragraph"
         else:
             new_sym = rlab + sym + rcopy
+            type ="label"
 
         new_list.append(
-            {"region": (rgn.a, rgn.b), 
+            {"region": (rgn.a, rgn.b),
+             "type": type,
              "content": sym,
              "fancy_content": new_sym}
         )

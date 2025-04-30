@@ -35,12 +35,12 @@
         {
             "name": "Subsubsection",
             "scope": "subsubsection.latexoutline, bullet.subsubsection.latexoutline",
-            "foreground": "rgb(246, 196, 253)",
+            "foreground": "rgb(255, 215, 250)",
         },
         {
             "name": "Paragraph",
             "scope": "paragraph.latexoutline, bullet.paragraph.latexoutline",
-            "foreground": "rgb(255, 255, 255)",
+            "foreground": "rgb(255, 248, 190)",
         },
         {
             "name": "Frametitle",
