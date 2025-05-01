@@ -15,11 +15,16 @@ import os
 #                                                                             #
 # ----------------------------------------------------------------------------#
 
+# ----------------------------------------------------
+'''Main command: toggle the layout'''
+
 class LatexOutlineCommand(WindowCommand):
     def run(self, side="right", outline_type="toc"):
         show_outline(self.window, side=side, outline_type=outline_type)
 
+
 # ----------------------------------------------------
+'''Close the outline view and adjust the layout'''
 
 class LatexOutlineCloseSidebarCommand(WindowCommand):
     def run(self):
@@ -34,7 +39,9 @@ class LatexOutlineCloseSidebarCommand(WindowCommand):
             self.window.set_layout(lo_new_layout)
             self.window.focus_view(active_view)
 
+
 # ----------------------------------------------------
+'''Refresh the contents of the outline view based on the 'symlist' setting'''
 
 class LatexOutlineRefreshCommand(TextCommand):
     def run(self, edit, symlist=None, path=None, active_view=None):
@@ -72,9 +79,10 @@ class LatexOutlineSyncEventHandler(EventListener):
             return
 
         view.settings().set('sync_in_progress', True)
-        sublime.set_timeout_async(delayed_sync_lo_view, 1000)
+        sublime.set_timeout_async(sync_lo_view, 1000)
 
 # ----------------------------------------------------
+
 
 class LatexOutlineEventHandler(EventListener):
 
@@ -119,7 +127,7 @@ class LatexOutlineEventHandler(EventListener):
         outline_type = lo_view.settings().get('outline_type')
         refresh_lo_view(lo_view, view.file_name(), view, outline_type)
         # symlist = lo_view.settings().get('symlist')
-        delayed_sync_lo_view()
+        sync_lo_view()
 
 # ------- Go to the corresponding place in the LaTeX file when the outline is clicked on
 
@@ -168,7 +176,7 @@ class LatexOutlineEventHandler(EventListener):
                 copy_label(active_view, region_position)
             else:
                 goto_region(active_view, region_position)
-                delayed_sync_lo_view()
+                sync_lo_view()
                 
 
 # ------- Arranges the layout when one closes the outline manually
@@ -191,14 +199,14 @@ class LatexOutlineEventHandler(EventListener):
         window.set_layout(window.settings().get('lo_new_layout'))
         window.settings().erase('lo_new_layout')
 
-# --------------
+# -------------- Future: refresh the data collected from the .aux file
 
-    def on_post_window_command(self, window, command_name, args):
-        if not window.active_view() or 'LaTeX.sublime-syntax' not in window.active_view().settings().get('syntax'):
-            return
-        if command_name != "show_panel":
-            return
-        if not args["panel"] or args["panel"] != "output.latextools":
-            return
-        print("youpi")
+    # def on_post_window_command(self, window, command_name, args):
+    #     if not window.active_view() or 'LaTeX.sublime-syntax' not in window.active_view().settings().get('syntax'):
+    #         return
+    #     if command_name != "show_panel":
+    #         return
+    #     if not args["panel"] or args["panel"] != "output.latextools":
+    #         return
+    #     print("Go and see the .aux file")
 

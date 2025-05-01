@@ -33,7 +33,7 @@ lo_chars = {
 
 def show_outline(window, side="right", outline_type="toc"):
     """
-    Toggles the outline view. 
+    Toggle the outline view. 
     Filling it will be taken care of by LatexOutlineEventHandler which in
     particular calls the LatexOutlineRefresh command.
     """
@@ -83,16 +83,31 @@ def refresh_lo_view(lo_view, path, view, outline_type):
 
 # --------------------------
 
-def delayed_sync_lo_view():
-    view = sublime.active_window().active_view()
+def sync_lo_view():
+    ''' sync the outline view with current file location '''
+
     lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
     if not lo_view or not lo_view.settings().get('outline_sync'):
         return
     if lo_view is not None:
         outline_type = lo_view.settings().get('outline_type')
+        view = sublime.active_window().active_view()
+
         unfiltered_st_sym_list = get_st_symbols(view, outline_type)
         new_list = filter_and_decorate_symlist(unfiltered_st_sym_list, outline_type)
-        sync_lo_view(lo_view, new_list)
+        
+        point = view.sel()[0].end()
+        range_lows = [view.line(item['region'][0]).begin() for item in new_list]
+        range_sorted = [0] + range_lows[1:len(range_lows)] + [view.size()]
+        lo_line = binary_search(range_sorted, point) - 1
+        lo_point_start = lo_view.text_point_utf8(lo_line, 0)
+        lo_view.show_at_center(lo_point_start, animate=True)
+        lo_view.sel().clear()
+        lo_view.sel().add(lo_point_start)
+        # For some reason, 
+        # the following makes the outline highlighting more reliable.
+        lo_view.set_syntax_file('Packages/LaTeXOutline/latexoutline.sublime-syntax')
+
     view.settings().set('sync_in_progress', False)
 
 
@@ -133,6 +148,7 @@ def copy_label(active_view, region_position):
 # --------------------------
 
 def reduce_layout(window, lo_view, lo_group, sym_side):
+    '''Determine the new layout when closing LO'''
 
     current_layout = window.layout()
     rows = current_layout["rows"]
@@ -160,24 +176,6 @@ def reduce_layout(window, lo_view, lo_group, sym_side):
 #                                                                           #
 # --------------------------------------------------------------------------#
 
-
-def sync_lo_view(lo_view, new_list):
-    '''
-    sync the outline view with current file location
-    '''
-    view = sublime.active_window().active_view()
-    point = view.sel()[0].end()
-    range_lows = [view.line(item['region'][0]).begin() for item in new_list]
-    range_sorted = [0] + range_lows[1:len(range_lows)] + [view.size()]
-    lo_line = binary_search(range_sorted, point) - 1
-
-    lo_point_start = lo_view.text_point_utf8(lo_line, 0)
-    lo_view.show_at_center(lo_point_start, animate=True)
-    lo_view.sel().clear()
-    lo_view.sel().add(lo_point_start)
-    # For some reason, 
-    # the following makes the outline highlighting more reliable.
-    lo_view.set_syntax_file('Packages/LaTeXOutline/latexoutline.sublime-syntax')
 
 # --------------------------
 
@@ -260,6 +258,9 @@ def calc_width(view):
 # --------------------------
 
 def get_sidebar_view_and_group(window):
+    '''
+    In which view and group LO is
+    '''
     views = window.views()
     lo_view = None
     lo_group = None
@@ -272,6 +273,9 @@ def get_sidebar_view_and_group(window):
 # --------------------------
 
 def get_sidebar_status(window):
+    '''
+    Is LO on or not
+    '''
     sidebar_on = False
     for v in window.views():
         if 'latexoutline.sublime-syntax' in v.settings().get('syntax'):
@@ -283,7 +287,8 @@ def get_sidebar_status(window):
 
 def filter_and_decorate_symlist(unfiltered_symlist, outline_type):
     '''
-    Filters the symlist to only show LaTeX sections in indented manner
+    Filters the symlist to only show sections and labels
+    Prepares their presentation in the LO view, put it in the 'symlist' setting
     '''
     if outline_type == "toc":
         pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle):.*'
@@ -351,6 +356,10 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type):
 # --------------------------
 
 def get_st_symbols(view, outline_type):
+    '''
+    Ask ST for the symbol list and apply a first filter according 
+    to the outline chose type
+    '''
     if outline_type == "toc":
         unfiltered_st_sym_list = [
             (v.region, v.name) for v in view.symbol_regions() if v.kind[1] == 'f'
