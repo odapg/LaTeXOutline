@@ -307,8 +307,6 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type):
     rlab = '  ' + lo_chars['label']
     rcopy = ' ' + lo_chars['copy'] + ' '
 
-    print(sym_list)
-
     new_list = []
     for i in sym_list:
         rgn = i[0]

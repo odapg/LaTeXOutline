@@ -157,6 +157,7 @@ class LatexOutlineEventHandler(EventListener):
 # ------- 
 # When the user clicks the outline,
 # go to the corresponding place in the LaTeX file
+# or copy the label when asked
 
     def on_selection_modified(self, view):
         if 'latexoutline' not in view.settings().get('syntax'):
@@ -186,6 +187,8 @@ class LatexOutlineEventHandler(EventListener):
                 sublime.set_clipboard(label)
                 sublime.active_window().status_message(
                 f" ✓ Copied reference '{label}' to the clipboard")
+                lo_view.sel().clear()
+                sublime.active_window().focus_view(active_view)
                 return
 
             # Refresh the outline to get the current regions
