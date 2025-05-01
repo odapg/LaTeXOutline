@@ -16,15 +16,30 @@ import os
 # ----------------------------------------------------------------------------#
 
 # ----------------------------------------------------
-'''Main command: toggle the layout'''
+# Main command: toggle the layout
 
 class LatexOutlineCommand(WindowCommand):
     def run(self, side="right", outline_type="toc"):
-        show_outline(self.window, side=side, outline_type=outline_type)
+        # Closes the outline view if it already exists
+        if get_sidebar_status(self.window):
+            lo_view, lo_group = get_sidebar_view_and_group(self.window)
+            previous_side = lo_view.settings().get('side')
+            self.window.run_command('latex_outline_close_sidebar')
+            if side != previous_side:
+                show_outline(self.window, side=side, outline_type=outline_type)
+            else:
+                current_type = lo_view.settings().get('current_outline_type')
+                if outline_type == "both" and current_type == "toc":
+                    show_outline(self.window, side=side, outline_type="full")    
+        else:
+            if outline_type == "full":
+                show_outline(self.window, side=side, outline_type="full")
+            else:
+                show_outline(self.window, side=side, outline_type="toc")
 
 
 # ----------------------------------------------------
-'''Close the outline view and adjust the layout'''
+# Close the outline view and adjust the layout
 
 class LatexOutlineCloseSidebarCommand(WindowCommand):
     def run(self):
@@ -41,7 +56,7 @@ class LatexOutlineCloseSidebarCommand(WindowCommand):
 
 
 # ----------------------------------------------------
-'''Refresh the contents of the outline view based on the 'symlist' setting'''
+# Refresh the contents of the outline view based on the 'symlist' setting
 
 class LatexOutlineRefreshCommand(TextCommand):
     def run(self, edit, symlist=None, path=None, active_view=None):
@@ -57,12 +72,15 @@ class LatexOutlineRefreshCommand(TextCommand):
         self.view.sel().clear()
        
        
-# ----------------------------------------------------
+# ----------------------------------------------------#
+#                   Sync event handler                #
+# ----------------------------------------------------#
 
 class LatexOutlineSyncEventHandler(EventListener):
 
-# ------- Synchronizes the highlight in the outline depending on the cursor's place
-#         in the LaTeX file
+# ------- 
+# Synchronizes the highlight in the outline 
+# depending on the cursor's place in the LaTeX file
 
     def on_selection_modified(self, view):
         if view.sheet().is_transient():
@@ -81,12 +99,16 @@ class LatexOutlineSyncEventHandler(EventListener):
         view.settings().set('sync_in_progress', True)
         sublime.set_timeout_async(sync_lo_view, 1000)
 
-# ----------------------------------------------------
 
+# ----------------------------------------------------#
+#                   Main event handler                #
+# ----------------------------------------------------#
 
 class LatexOutlineEventHandler(EventListener):
 
-# ------- Reset the outline when the user focuses on another LaTeX 
+
+# ------- 
+# Reset the outline when the user focuses on another LaTeX document
 
     def on_activated(self, view):
         # Apparently the console could pass the next tests
@@ -105,10 +127,11 @@ class LatexOutlineEventHandler(EventListener):
                 return
             else:
                 lo_view.settings().set('current_file', view.file_name())
-                outline_type = lo_view.settings().get('outline_type')
+                outline_type = lo_view.settings().get('current_outline_type')
                 refresh_lo_view(lo_view, view.file_name(), view, outline_type)
 
-# ------- Reset the outline when the LaTeX file is saved
+# ------- 
+# Reset the outline when the LaTeX file is saved
 
     def on_pre_save(self, view):
         if not get_sidebar_status(view.window()):
@@ -124,12 +147,14 @@ class LatexOutlineEventHandler(EventListener):
             if lo_view.settings().get('current_file') != view.file_name():
                 lo_view.settings().set('current_file', view.file_name())
 
-        outline_type = lo_view.settings().get('outline_type')
+        outline_type = lo_view.settings().get('current_outline_type')
         refresh_lo_view(lo_view, view.file_name(), view, outline_type)
         # symlist = lo_view.settings().get('symlist')
         sync_lo_view()
 
-# ------- Go to the corresponding place in the LaTeX file when the outline is clicked on
+# ------- 
+# When the user clicks the outline,
+# go to the corresponding place in the LaTeX file
 
     def on_selection_modified(self, view):
         if 'latexoutline' not in view.settings().get('syntax'):
@@ -162,7 +187,7 @@ class LatexOutlineEventHandler(EventListener):
                 return
 
             # Refresh the outline to get the current regions
-            outline_type = lo_view.settings().get('outline_type')
+            outline_type = lo_view.settings().get('current_outline_type')
             refresh_lo_view(lo_view, active_view.file_name(), active_view, outline_type)
             symlist = lo_view.settings().get('symlist')
 
@@ -176,10 +201,10 @@ class LatexOutlineEventHandler(EventListener):
                 copy_label(active_view, region_position)
             else:
                 goto_region(active_view, region_position)
-                sync_lo_view()
-                
+                sync_lo_view()              
 
-# ------- Arranges the layout when one closes the outline manually
+# ------- 
+# Arranges the layout when one closes the outline manually
 
     def on_pre_close(self, view):
         if 'latexoutline' not in view.settings().get('syntax'):
@@ -199,9 +224,10 @@ class LatexOutlineEventHandler(EventListener):
         window.set_layout(window.settings().get('lo_new_layout'))
         window.settings().erase('lo_new_layout')
 
-# -------------- Future: refresh the data collected from the .aux file
+# -------------- 
+# Future: refresh the data collected from the .aux file
 
-    # def on_post_window_command(self, window, command_name, args):
+    # # def on_post_window_command(self, window, command_name, args):
     #     if not window.active_view() or 'LaTeX.sublime-syntax' not in window.active_view().settings().get('syntax'):
     #         return
     #     if command_name != "show_panel":

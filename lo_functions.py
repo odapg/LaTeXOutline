@@ -33,19 +33,10 @@ lo_chars = {
 
 def show_outline(window, side="right", outline_type="toc"):
     """
-    Toggle the outline view. 
+    Creates the outline view. 
     Filling it will be taken care of by LatexOutlineEventHandler which in
     particular calls the LatexOutlineRefresh command.
     """
-
-    # Closes the outline view if it already exists
-    if get_sidebar_status(window):
-        lo_view, lo_group = get_sidebar_view_and_group(window)
-        previous_side = lo_view.settings().get('side')
-        window.run_command('latex_outline_close_sidebar')
-        if side != previous_side:
-            show_outline(window, side=side)
-        return
 
     # Creates the outline view otherwise
     prev_focus = window.active_view()
@@ -54,7 +45,7 @@ def show_outline(window, side="right", outline_type="toc"):
     name = u"𝌆 {0}".format(view_name)
     new_view.set_name(name)
     new_view.settings().set('side', side)
-    new_view.settings().set('outline_type', outline_type)
+    new_view.settings().set('current_outline_type', outline_type)
 
     arrange_layout(new_view, side)
     
@@ -90,7 +81,7 @@ def sync_lo_view():
     if not lo_view or not lo_view.settings().get('outline_sync'):
         return
     if lo_view is not None:
-        outline_type = lo_view.settings().get('outline_type')
+        outline_type = lo_view.settings().get('current_outline_type')
         view = sublime.active_window().active_view()
 
         unfiltered_st_sym_list = get_st_symbols(view, outline_type)

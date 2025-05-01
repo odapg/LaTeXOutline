@@ -1,13 +1,18 @@
 [
 // Copy these uncommented lines to your User keymap to use the shortkeys 
 //
+// outline_type: "toc" toggles the table of contents
+//               "full" toggles the table of contents and labels view
+//               "both" switches between "toc", "full" and nothing
+// side: left or right
+
     { "keys": ["super+j", "a"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
         "args": {"side": "left", "outline_type": "full"},
     },
     { "keys": ["super+j", "e"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-        "args": {"side": "right", "outline_type": "toc"}
+        "args": {"side": "right", "outline_type": "both"}
     },
     { "keys": ["super+j", "z"], "command": "latex_outline_close_sidebar"},
 
