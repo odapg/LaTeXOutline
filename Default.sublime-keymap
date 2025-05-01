@@ -4,7 +4,7 @@
 // outline_type: "toc" toggles the table of contents
 //               "full" toggles the table of contents and labels view
 //               "both" switches between "toc", "full" and nothing
-// side: left or right
+// side: "left" or "right"
 
     { "keys": ["super+j", "a"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],

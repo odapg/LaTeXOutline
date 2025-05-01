@@ -47,5 +47,11 @@
             "scope": "frametitle.latexoutline, bullet.frametitle.latexoutline",
             "foreground": "hsl(194, 34%, 31%)",
         },
+        {
+            "name": "Label",
+            "scope": "label.latexoutline, bullet.label.latexoutline",
+            "foreground": "rgb(168, 163, 83)",
+            "font_style": "italic",
+        },
     ]
 }

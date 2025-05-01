@@ -30,7 +30,9 @@ class LatexOutlineCommand(WindowCommand):
             else:
                 current_type = lo_view.settings().get('current_outline_type')
                 if outline_type == "both" and current_type == "toc":
-                    show_outline(self.window, side=side, outline_type="full")    
+                    show_outline(self.window, side=side, outline_type="full")
+                else:
+                    lo_view.settings().set('current_outline_type', '') 
         else:
             if outline_type == "full":
                 show_outline(self.window, side=side, outline_type="full")
