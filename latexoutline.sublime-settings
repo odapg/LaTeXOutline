@@ -4,7 +4,7 @@
   "outline_sync": true,
 
   // true: latexoutline will use the same color scheme as current file
-  // false: latexoutline will use the color scheme defined below
+  // false: latexoutline will use the color scheme defined below (default)
   "outline_inherit_color_scheme": false,
 
   // [LaTeXOutline-dark, LaTeXOutline-light or LaTeXOutline-custom].hidden-color-scheme

@@ -143,11 +143,18 @@ class LatexOutlineEventHandler(EventListener):
         if view.file_name() == None:
             return
 
+
         lo_view, lo_group = get_sidebar_view_and_group(view.window())
 
         if lo_view != None:
             if lo_view.settings().get('current_file') != view.file_name():
                 lo_view.settings().set('current_file', view.file_name())
+
+        # -- Refreshes the data gather from the .aux file
+        path = view.file_name()
+        aux_data = get_aux_file_data(path)
+        lo_view.settings().set('aux_data', aux_data)
+        # --------
 
         outline_type = lo_view.settings().get('current_outline_type')
         refresh_lo_view(lo_view, view.file_name(), view, outline_type)
@@ -181,6 +188,7 @@ class LatexOutlineEventHandler(EventListener):
             (row, col) = lo_view.rowcol(lo_view.sel()[0].begin())
             sel_scope = lo_view.scope_name(lo_view.sel()[0].begin())
             
+            # If the copy symbol ❐ was pressed
             if 'copy' in sel_scope:
                 symlist = lo_view.settings().get('symlist')
                 label = symlist[row]["content"]
@@ -190,6 +198,9 @@ class LatexOutlineEventHandler(EventListener):
                 lo_view.sel().clear()
                 sublime.active_window().focus_view(active_view)
                 return
+            
+            # otherwise, go to the corresponding region or copy the section label
+            # if the bullet is pressed
 
             # Refresh the outline to get the current regions
             outline_type = lo_view.settings().get('current_outline_type')
@@ -230,14 +241,13 @@ class LatexOutlineEventHandler(EventListener):
         window.settings().erase('lo_new_layout')
 
 # -------------- 
-# Future: refresh the data collected from the .aux file
+# Future: refresh the data collected from the .aux file after latex build
 
-    # # def on_post_window_command(self, window, command_name, args):
+    # def on_post_window_command(self, window, command_name, args):
     #     if not window.active_view() or 'LaTeX.sublime-syntax' not in window.active_view().settings().get('syntax'):
     #         return
     #     if command_name != "show_panel":
     #         return
     #     if not args["panel"] or args["panel"] != "output.latextools":
     #         return
-    #     print("Go and see the .aux file")
-
+        

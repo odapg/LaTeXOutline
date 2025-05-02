@@ -6,6 +6,7 @@ import sublime
 import sublime_plugin
 import re
 from sublime import Region
+from .parse_aux import parse_aux_file
 
 
 # -------------------------- Characters --------------------------
@@ -60,22 +61,22 @@ def refresh_lo_view(lo_view, path, view, outline_type):
     '''Prepare the use of latex_outline_refresh command'''
 
     # Get the section list
-    unfiltered_st_sym_list = get_st_symbols(view, outline_type)
-    new_list = filter_and_decorate_symlist(unfiltered_st_sym_list, outline_type)
+    unfiltered_st_symlist = get_st_symbols(view, outline_type)
+    sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type)
     active_view_id = view.id()
 
     if lo_view is not None:
         lo_view.settings().erase('symlist')
         lo_view.run_command('latex_outline_refresh', 
-                            {'symlist': new_list,
-                             'path': path,
-                             'active_view': active_view_id}
+                                {'symlist': sym_list,
+                                 'path': path,
+                                 'active_view': active_view_id}
                             )
 
 # --------------------------
 
 def sync_lo_view():
-    ''' sync the outline view with current file location '''
+    ''' sync the outline view with current place in the LaTeX file '''
 
     lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
     if not lo_view or not lo_view.settings().get('outline_sync'):
@@ -84,11 +85,12 @@ def sync_lo_view():
         outline_type = lo_view.settings().get('current_outline_type')
         view = sublime.active_window().active_view()
 
-        unfiltered_st_sym_list = get_st_symbols(view, outline_type)
-        new_list = filter_and_decorate_symlist(unfiltered_st_sym_list, outline_type)
+        # Change here, should refresh only regions based on the current symlist
+        unfiltered_st_symlist = get_st_symbols(view, outline_type)
+        sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type)
         
         point = view.sel()[0].end()
-        range_lows = [view.line(item['region'][0]).begin() for item in new_list]
+        range_lows = [view.line(item['region'][0]).begin() for item in sym_list]
         range_sorted = [0] + range_lows[1:len(range_lows)] + [view.size()]
         lo_line = binary_search(range_sorted, point) - 1
         lo_point_start = lo_view.text_point_utf8(lo_line, 0)
@@ -283,10 +285,10 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type):
     '''
     if outline_type == "toc":
         pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle):.*'
-        sym_list = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
+        filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
     else:
         pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle):.*|[^\\].*'
-        sym_list = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
+        filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
         
     part_list = [x for x in unfiltered_symlist if x[1].startswith("Part:")]
     chapter_list = [x for x in unfiltered_symlist if x[1].startswith("Chapter:")]
@@ -307,8 +309,8 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type):
     rlab = '  ' + lo_chars['label']
     rcopy = ' ' + lo_chars['copy'] + ' '
 
-    new_list = []
-    for i in sym_list:
+    sym_list = []
+    for i in filtered_symlist:
         rgn = i[0]
         sym = i[1]
         if sym.startswith('Part: '):
@@ -333,14 +335,14 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type):
             new_sym = rlab + sym + rcopy
             type ="label"
 
-        new_list.append(
+        sym_list.append(
             {"region": (rgn.a, rgn.b),
              "type": type,
              "content": sym,
              "fancy_content": new_sym}
         )
         
-    return new_list
+    return sym_list
 
 # --------------------------
 
@@ -350,15 +352,15 @@ def get_st_symbols(view, outline_type):
     to the outline chose type
     '''
     if outline_type == "toc":
-        unfiltered_st_sym_list = [
+        unfiltered_st_symlist = [
             (v.region, v.name) for v in view.symbol_regions() if v.kind[1] == 'f'
         ]
     else:
-        unfiltered_st_sym_list = [
+        unfiltered_st_symlist = [
             (v.region, v.name) for v in view.symbol_regions()
             if v.kind[1] == 'f' or v.kind[1] == 'l'
         ]
-    return unfiltered_st_sym_list
+    return unfiltered_st_symlist
 
 # --------------------------
 
@@ -376,3 +378,20 @@ def binary_search(array, x):
         else:
             high = mid
     return low
+
+# --------------------------
+
+def get_aux_file_data(path):
+    '''
+    Given a .tex file, gather information from the .aux file
+    and store it in aux.data settings
+    '''
+    if path:
+        aux_file = os.path.splitext(path)[0] + ".aux"
+        if os.path.exists(aux_file):
+            all_data = parse_aux_file(aux_file)
+            print(all_data)
+    else:
+        return 
+           
+

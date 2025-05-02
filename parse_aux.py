@@ -15,7 +15,8 @@ lo_chars = {
 def extract_brace_group(s, start):
     """Extract content inside balanced braces starting at position `start`."""
     if s[start] != '{':
-        raise ValueError("Expected opening brace at position {}".format(start))
+        return None
+        # raise ValueError("Expected opening brace at position {}".format(start))
 
     depth = 0
     i = start
@@ -27,8 +28,9 @@ def extract_brace_group(s, start):
             if depth == 0:
                 return s[start+1:i], i + 1  # exclude outer braces
         i += 1
-
-    raise ValueError("Unmatched braces in string starting at position {}".format(start))
+        
+    return None
+    # raise ValueError("Unmatched braces in string starting at position {}".format(start))
 
 
 def parse_newlabel_line(line):
@@ -65,11 +67,11 @@ def parse_newlabel_line(line):
             'source': 'newlabel',
             'label': label_name,
             'reference': fields[0] if len(fields) > 0 else None,
-            'page_number': fields[1] if len(fields) > 1 else None,
-            'hyper_anchor': fields[2] if len(fields) > 2 else None,
+            # 'page_number': fields[1] if len(fields) > 1 else None,
+            # 'hyper_anchor': fields[2] if len(fields) > 2 else None,
             'entry_type': type_main,
-            'num': type_sub,
-            'extra': fields[4] if len(fields) > 4 else None,
+            # 'num': type_sub,
+            # 'extra': fields[4] if len(fields) > 4 else None,
         }
 
     except Exception as e:
@@ -114,14 +116,14 @@ def parse_writefile_line(line):
                 'entry_type': entry_type,
                 'reference': entry_number,
                 'entry_title': entry_title,
-                'page_number': page_number
+                # 'page_number': page_number
             }
 
     except Exception as e:
         print(f"Error parsing \\@writefile: {line.strip()}\n{e}")
         return None
 
-
+# ---- Main function ----
 
 def parse_aux_file(filename):
     """Parse a .aux file and return a list of entries from \newlabel and \@writefile."""
@@ -141,6 +143,9 @@ def parse_aux_file(filename):
                 entries.append(parsed)
 
     return entries
+
+
+# ---- Various print functions ----
 
 def print_sections(sec_data):        
     print("-------- Sections")
