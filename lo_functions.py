@@ -344,18 +344,23 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
         else:
             type = "label"
         ts = normalize(true_sym)
-        ref = next(((i, entry['reference']) for i, entry in enumerate(aux_data[n:]) 
-                                if ts == normalize(entry['main_content'])), None)
-        if ref:
-            n += ref[0]
+        if aux_data:
+            ref = next((entry['reference'] for  entry in aux_data #[n:]
+                                    if ts == normalize(entry['main_content'])), None)
         else:
-            n += 1
+            ref = None
+        # ref = next(((i, entry['reference']) for i, entry in enumerate(aux_data) #[n:]
+        #                         if ts == normalize(entry['main_content'])), None)
+        # if ref:
+        #     n += ref[0]
+        # # else:
+        #     n += 1
             
         if type == "label":
             new_sym = prefix["label"] + sym + prefix["copy"]
         else:
             if ref:
-                new_sym = prefix[type] + ref[1] + ' ' + true_sym
+                new_sym = prefix[type] + ref + ' ' + true_sym
             else:
                 new_sym = prefix[type] + true_sym
 
@@ -418,7 +423,7 @@ def get_aux_file_data(path):
             # print(all_data)
             return all_data
     else:
-        return 
+        return None
            
 # --------------------------
 
@@ -441,5 +446,6 @@ def refresh_regions(lo_view, active_view, outline_type):
 
 # --------------------------
 def normalize(s):
+    s = re.sub(r'\s+', ' ', s)
     return unicodedata.normalize("NFC", s)
 

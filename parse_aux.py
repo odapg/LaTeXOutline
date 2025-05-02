@@ -103,6 +103,8 @@ def parse_writefile_line(line):
 
             entry_number = None
             entry_title = raw_text.strip()
+            test_toc = r'^\\toc[a-zA-Z0-9]+\s\{[0-9]*\}'
+            text_mbox = r'^\\mbox\s*\{(.*?)\}$'
 
             if raw_text.startswith('\\numberline'):
                 k = raw_text.find('{')
@@ -110,6 +112,16 @@ def parse_writefile_line(line):
                 entry_title = raw_text[k:].lstrip()
                 if entry_title.startswith('}'):
                     entry_title = entry_title[1:].lstrip()
+            
+            # Case {\section{}{...}}
+            elif re.match(test_toc, raw_text):
+                raw_text = re.sub(test_toc, '', raw_text, count=1)
+                k = raw_text.find('{')
+                entry_number, k = extract_brace_group(raw_text, k)
+                entry_title = raw_text[k:].lstrip().lstrip('{').rstrip('}')
+                if entry_title.startswith('}'):
+                    entry_title = entry_title[1:].lstrip()
+
             elif '\\hspace' in raw_text:
                 split_index = raw_text.find('\\hspace')
                 entry_number = raw_text[:split_index].strip()
@@ -118,6 +130,10 @@ def parse_writefile_line(line):
                     hspace_brace_end = raw_text.find('}', hspace_brace_start)
                     if hspace_brace_end != -1:
                         entry_title = raw_text[hspace_brace_end+1:].strip()
+
+            # Removes unnecessary mboxes
+            if match := re.match(text_mbox, entry_number):
+                entry_number = match.group(1)
 
             if entry_title.startswith('{\\ignorespaces'):
                 entry_title = entry_title[14:-1].strip()

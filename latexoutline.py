@@ -150,7 +150,7 @@ class LatexOutlineEventHandler(EventListener):
             if lo_view.settings().get('current_file') != view.file_name():
                 lo_view.settings().set('current_file', view.file_name())
 
-        # -- Refreshes the data gather from the .aux file
+        # -- Refreshes the data gathered from the .aux file
         path = view.file_name()
         aux_data = get_aux_file_data(path)
         lo_view.settings().set('aux_data', aux_data)
