@@ -202,9 +202,8 @@ class LatexOutlineEventHandler(EventListener):
             # otherwise, go to the corresponding region or copy the section label
             # if the bullet is pressed
 
-            # Refresh the outline to get the current regions
+            # Refresh the regions (only) in the symlist
             outline_type = lo_view.settings().get('current_outline_type')
-            # refresh_lo_view(lo_view, active_view.file_name(), active_view, outline_type)
             refresh_regions(lo_view, active_view, outline_type)
             symlist = lo_view.settings().get('symlist')
 

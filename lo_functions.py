@@ -83,13 +83,11 @@ def sync_lo_view():
         return
     if lo_view is not None:
         outline_type = lo_view.settings().get('current_outline_type')
-        sym_list = lo_view.settings().get('symlist')
         view = sublime.active_window().active_view()
 
-        # Refresh regions based on the current symlist
+        # Refresh the regions (only) in the current symlist
         refresh_regions(lo_view, view, outline_type)
-        # unfiltered_st_symlist = get_st_symbols(view, outline_type)
-        # sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type)
+        sym_list = lo_view.settings().get('symlist')
         
         point = view.sel()[0].end()
         range_lows = [view.line(item['region'][0]).begin() for item in sym_list]
@@ -301,41 +299,54 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type):
     elif len(chapter_list) > 0:
         shift = 1
 
-    rpt = lo_chars['part'] + ' '
-    rch = ' ' + lo_chars['chapter'] + ' ' if shift==2 else lo_chars['chapter'] + ' '
-    rs = ' ' * shift + lo_chars['section'] + ' '
-    rss = ' ' * (shift + 1) + lo_chars['subsection'] + ' '
-    rsss = ' ' * (shift + 2) + lo_chars['subsubsection'] + ' '
-    rpar = ' ' * (shift + 3) + lo_chars['paragraph'] + ' '
-    rftt = lo_chars['frametitle'] + ' '
-    rlab = '  ' + lo_chars['label']
-    rcopy = ' ' + lo_chars['copy'] + ' '
+    prefix = {
+    "part" : lo_chars['part'] + ' ',
+    "chapter" : ' ' + lo_chars['chapter'] + ' ' if shift==2 else lo_chars['chapter'] + ' ',
+    "section" : ' ' * shift + lo_chars['section'] + ' ',
+    "subsection" : ' ' * (shift + 1) + lo_chars['subsection'] + ' ',
+    "subsubsection" : ' ' * (shift + 2) + lo_chars['subsubsection'] + ' ',
+    "paragraph" : ' ' * (shift + 3) + lo_chars['paragraph'] + ' ',
+    "frametitle" : lo_chars['frametitle'] + ' ',
+    "label" : '  ' + lo_chars['label'],
+    "copy" : ' ' + lo_chars['copy'] + ' ',
+    }
 
     sym_list = []
-    for i in filtered_symlist:
-        rgn = i[0]
-        sym = i[1]
+    aux_data = []
+    # n=0
+    for item in filtered_symlist:
+        rgn = item[0]
+        sym = item[1]
+
         if sym.startswith('Part: '):
-            new_sym = rpt + sym[6:]
+            true_sym = sym[6:]
             type = "part"
         elif sym.startswith('Chapter: '):
-            new_sym = rch + sym[9:]
+            true_sym = sym[9:]
             type = "chapter"
         elif sym.startswith('Section: '):
-            new_sym = rs + sym[9:]
+            true_sym = sym[9:]
             type = "section"
         elif sym.startswith('Subsection: '):
-            new_sym = rss + sym[12:]
+            true_sym = sym[12:]
             type = "subsection"
         elif sym.startswith('Subsubsection: '):
-            new_sym = rsss + sym[15:]
+            true_sym = sym[15:]
             type = "subsubsection"
         elif sym.startswith('Paragraph: '):
-            new_sym = rpar + sym[11:]
+            true_sym = sym[11:]
             type = "paragraph"
         else:
-            new_sym = rlab + sym + rcopy
-            type ="label"
+            type = "label"
+
+        if type == "label":
+            new_sym = prefix["label"] + sym + prefix["copy"]
+        else:
+            new_sym = prefix[type] + true_sym
+            
+        # reference = next((entry['reference'] for entry in aux_data[n:] 
+        #                         if true_sym == entry['entry_title']), None)
+        # n += 1
 
         sym_list.append(
             {"region": (rgn.a, rgn.b),
@@ -393,6 +404,7 @@ def get_aux_file_data(path):
         if os.path.exists(aux_file):
             all_data = parse_aux_file(aux_file)
             print(all_data)
+            return all_data
     else:
         return 
            
