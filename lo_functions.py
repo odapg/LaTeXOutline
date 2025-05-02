@@ -83,11 +83,13 @@ def sync_lo_view():
         return
     if lo_view is not None:
         outline_type = lo_view.settings().get('current_outline_type')
+        sym_list = lo_view.settings().get('symlist')
         view = sublime.active_window().active_view()
 
-        # Change here, should refresh only regions based on the current symlist
-        unfiltered_st_symlist = get_st_symbols(view, outline_type)
-        sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type)
+        # Refresh regions based on the current symlist
+        refresh_regions(lo_view, view, outline_type)
+        # unfiltered_st_symlist = get_st_symbols(view, outline_type)
+        # sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type)
         
         point = view.sel()[0].end()
         range_lows = [view.line(item['region'][0]).begin() for item in sym_list]
@@ -393,5 +395,23 @@ def get_aux_file_data(path):
             print(all_data)
     else:
         return 
+           
+# --------------------------
+
+def refresh_regions(lo_view, active_view, outline_type):
+    '''
+    Merely refresh the regions in the symlist setting
+    '''
+    sym_list = lo_view.settings().get('symlist')
+    unfiltered_st_symlist = get_st_symbols(active_view, outline_type)
+
+    new_sym_list = sym_list
+    for item in sym_list:
+        key = item["content"]
+        region = next((reg for reg, sym in unfiltered_st_symlist if sym == key), None)
+        if region:
+            item["region"] = (region.a, region.b)
+    lo_view.settings().set('symlist', new_sym_list)
+    return 
            
 

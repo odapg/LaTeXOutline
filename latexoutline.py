@@ -204,7 +204,8 @@ class LatexOutlineEventHandler(EventListener):
 
             # Refresh the outline to get the current regions
             outline_type = lo_view.settings().get('current_outline_type')
-            refresh_lo_view(lo_view, active_view.file_name(), active_view, outline_type)
+            # refresh_lo_view(lo_view, active_view.file_name(), active_view, outline_type)
+            refresh_regions(lo_view, active_view, outline_type)
             symlist = lo_view.settings().get('symlist')
 
             # Get the region corresponding to the selected item
