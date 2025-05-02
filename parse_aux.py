@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
+import re
+
 # from .lo_functions import chars
 lo_chars = {
     'part': '■',
@@ -65,7 +67,7 @@ def parse_newlabel_line(line):
 
         return {
             'source': 'newlabel',
-            'label': label_name,
+            'main_content': label_name,
             'reference': fields[0] if len(fields) > 0 else None,
             # 'page_number': fields[1] if len(fields) > 1 else None,
             # 'hyper_anchor': fields[2] if len(fields) > 2 else None,
@@ -95,9 +97,12 @@ def parse_writefile_line(line):
             raw_text, j = extract_brace_group(content, j)
             page_number, j = extract_brace_group(content, j)
 
-            # If raw_text starts with \numberline{X}Some Title
+            # Attempt to extract optional extra field and ignore it
+            if j < len(content) and content[j] == '{':
+                _, j = extract_brace_group(content, j)
+
             entry_number = None
-            entry_title = raw_text
+            entry_title = raw_text.strip()
 
             if raw_text.startswith('\\numberline'):
                 k = raw_text.find('{')
@@ -105,17 +110,28 @@ def parse_writefile_line(line):
                 entry_title = raw_text[k:].lstrip()
                 if entry_title.startswith('}'):
                     entry_title = entry_title[1:].lstrip()
+            elif '\\hspace' in raw_text:
+                split_index = raw_text.find('\\hspace')
+                entry_number = raw_text[:split_index].strip()
+                hspace_brace_start = raw_text.find('{', split_index)
+                if hspace_brace_start != -1:
+                    hspace_brace_end = raw_text.find('}', hspace_brace_start)
+                    if hspace_brace_end != -1:
+                        entry_title = raw_text[hspace_brace_end+1:].strip()
 
-                # Remove {\ignorespaces ...} if present
-                if entry_title.startswith('{\\ignorespaces'):
-                    entry_title = entry_title[14:-1].strip()
+            if entry_title.startswith('{\\ignorespaces'):
+                entry_title = entry_title[14:-1].strip()
+
+            entry_title = re.sub(r'\\([a-zA-Z0-9]+)\s+{', r'\\\1{', entry_title)
+
+
 
             return {
                 'source': 'writefile',
                 'type': file_type,
                 'entry_type': entry_type,
                 'reference': entry_number,
-                'entry_title': entry_title,
+                'main_content': entry_title,
                 # 'page_number': page_number
             }
 

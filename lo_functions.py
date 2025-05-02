@@ -5,6 +5,7 @@ import os
 import sublime
 import sublime_plugin
 import re
+import unicodedata
 from sublime import Region
 from .parse_aux import parse_aux_file
 
@@ -61,8 +62,10 @@ def refresh_lo_view(lo_view, path, view, outline_type):
     '''Prepare the use of latex_outline_refresh command'''
 
     # Get the section list
+    aux_data = get_aux_file_data(path)
+    print(aux_data)
     unfiltered_st_symlist = get_st_symbols(view, outline_type)
-    sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type)
+    sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type, aux_data)
     active_view_id = view.id()
 
     if lo_view is not None:
@@ -278,7 +281,7 @@ def get_sidebar_status(window):
 
 # --------------------------
 
-def filter_and_decorate_symlist(unfiltered_symlist, outline_type):
+def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
     '''
     Filters the symlist to only show sections and labels
     Prepares their presentation in the LO view, put it in the 'symlist' setting
@@ -312,8 +315,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type):
     }
 
     sym_list = []
-    aux_data = []
-    # n=0
+    n=0
     for item in filtered_symlist:
         rgn = item[0]
         sym = item[1]
@@ -336,17 +338,27 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type):
         elif sym.startswith('Paragraph: '):
             true_sym = sym[11:]
             type = "paragraph"
+        elif sym.startswith('Frametitle: '):
+            true_sym = sym[12:]
+            type = "frametitle"
         else:
             type = "label"
-
+        ts = normalize(true_sym)
+        ref = next(((i, entry['reference']) for i, entry in enumerate(aux_data[n:]) 
+                                if ts == normalize(entry['main_content'])), None)
+        if ref:
+            n += ref[0]
+        else:
+            n += 1
+            
         if type == "label":
             new_sym = prefix["label"] + sym + prefix["copy"]
         else:
-            new_sym = prefix[type] + true_sym
-            
-        # reference = next((entry['reference'] for entry in aux_data[n:] 
-        #                         if true_sym == entry['entry_title']), None)
-        # n += 1
+            if ref:
+                new_sym = prefix[type] + ref[1] + ' ' + true_sym
+            else:
+                new_sym = prefix[type] + true_sym
+
 
         sym_list.append(
             {"region": (rgn.a, rgn.b),
@@ -354,7 +366,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type):
              "content": sym,
              "fancy_content": new_sym}
         )
-        
+    
     return sym_list
 
 # --------------------------
@@ -403,7 +415,7 @@ def get_aux_file_data(path):
         aux_file = os.path.splitext(path)[0] + ".aux"
         if os.path.exists(aux_file):
             all_data = parse_aux_file(aux_file)
-            print(all_data)
+            # print(all_data)
             return all_data
     else:
         return 
@@ -425,5 +437,9 @@ def refresh_regions(lo_view, active_view, outline_type):
             item["region"] = (region.a, region.b)
     lo_view.settings().set('symlist', new_sym_list)
     return 
-           
+
+
+# --------------------------
+def normalize(s):
+    return unicodedata.normalize("NFC", s)
 
