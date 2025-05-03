@@ -8,11 +8,11 @@
 
     { "keys": ["super+j", "a"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-        "args": {"side": "left", "outline_type": "both"},
+        "args": {"side": "left", "outline_type": "both", "close_on_repeated_use": true},
     },
     { "keys": ["super+j", "e"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-        "args": {"side": "right", "outline_type": "both"}
+        "args": {"side": "right", "outline_type": "both", "close_on_repeated_use": false}
     },
     { "keys": ["super+j", "z"], "command": "latex_outline_close_sidebar"},
 

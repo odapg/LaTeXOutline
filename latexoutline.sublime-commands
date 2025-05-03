@@ -4,7 +4,8 @@
     "command": "latex_outline",
     "args": {
       "side": "right",
-      "outline_type": "toc"
+      "outline_type": "toc",
+      "close_on_repeated_use": false
     }
   },
   {
@@ -12,7 +13,8 @@
     "command": "latex_outline",
     "args": {
       "side": "left",
-      "outline_type": "toc"
+      "outline_type": "toc",
+      "close_on_repeated_use": false
     }
   },
     {
@@ -20,7 +22,8 @@
     "command": "latex_outline",
     "args": {
       "side": "right",
-      "outline_type": "both"
+      "outline_type": "both",
+      "close_on_repeated_use": false
     }
   },
   {
@@ -28,7 +31,8 @@
     "command": "latex_outline",
     "args": {
       "side": "left",
-      "outline_type": "both"
+      "outline_type": "both",
+      "close_on_repeated_use": false
     }
   },
   {

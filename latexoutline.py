@@ -19,25 +19,35 @@ import os
 # Main command: toggle the layout
 
 class LatexOutlineCommand(WindowCommand):
-    def run(self, side="right", outline_type="toc"):
+    def run(self, side="right", outline_type="toc", close_on_repeated_use=True):
 
-        # Close the outline view if it already exists
-        # and possibly replace it
+        # If the outline view already exists:
+        # close the panel and possibly replace it
         if get_sidebar_status(self.window):
             lo_view, lo_group = get_sidebar_view_and_group(self.window)
 
             current_side = lo_view.settings().get('side')
             current_type = lo_view.settings().get('current_outline_type')
 
+            if (current_side == side and current_type == type 
+                and not close_on_repeated_use):
+                return
+                
             self.window.run_command('latex_outline_close_sidebar')
 
             if side != current_side:
-                show_outline(self.window, side=side, outline_type=outline_type)
-            else:
-                if outline_type == "both" and current_type == "toc":
-                    show_outline(self.window, side=side, outline_type="full")
+                if outline_type == "both":
+                    show_outline(self.window, side=side, outline_type=current_type)
                 else:
-                    lo_view.settings().set('current_outline_type', '') 
+                    show_outline(self.window, side=side, outline_type=outline_type)
+            elif outline_type != current_type and outline_type != "both":
+                show_outline(self.window, side=side, outline_type=outline_type)
+            elif outline_type == "both" and current_type == "toc":
+                    show_outline(self.window, side=side, outline_type="full")
+            elif outline_type == "both" and current_type == "full" and not close_on_repeated_use:
+                    show_outline(self.window, side=side, outline_type="toc")
+            else:
+                lo_view.settings().set('current_outline_type', '') 
 
         # Open it otherwise
         else:
