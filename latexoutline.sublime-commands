@@ -1,6 +1,22 @@
 [
   {
-    "caption": "LaTeXOutline: sidebar on the Right",
+    "caption": "LaTeXOutline: ToC on the Right",
+    "command": "latex_outline",
+    "args": {
+      "side": "right",
+      "outline_type": "toc"
+    }
+  },
+  {
+    "caption": "LaTeXOutline: toC on the Left",
+    "command": "latex_outline",
+    "args": {
+      "side": "left",
+      "outline_type": "toc"
+    }
+  },
+    {
+    "caption": "LaTeXOutline: ToC and labels on the Right",
     "command": "latex_outline",
     "args": {
       "side": "right",
@@ -8,7 +24,7 @@
     }
   },
   {
-    "caption": "LaTeXOutline: sidebar on the Left",
+    "caption": "LaTeXOutline: toC and labels on the Left",
     "command": "latex_outline",
     "args": {
       "side": "left",

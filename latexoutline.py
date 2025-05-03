@@ -20,19 +20,26 @@ import os
 
 class LatexOutlineCommand(WindowCommand):
     def run(self, side="right", outline_type="toc"):
-        # Closes the outline view if it already exists
+
+        # Close the outline view if it already exists
+        # and possibly replace it
         if get_sidebar_status(self.window):
             lo_view, lo_group = get_sidebar_view_and_group(self.window)
-            previous_side = lo_view.settings().get('side')
+
+            current_side = lo_view.settings().get('side')
+            current_type = lo_view.settings().get('current_outline_type')
+
             self.window.run_command('latex_outline_close_sidebar')
-            if side != previous_side:
+
+            if side != current_side:
                 show_outline(self.window, side=side, outline_type=outline_type)
             else:
-                current_type = lo_view.settings().get('current_outline_type')
                 if outline_type == "both" and current_type == "toc":
                     show_outline(self.window, side=side, outline_type="full")
                 else:
                     lo_view.settings().set('current_outline_type', '') 
+
+        # Open it otherwise
         else:
             if outline_type == "full":
                 show_outline(self.window, side=side, outline_type="full")

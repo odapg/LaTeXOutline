@@ -194,10 +194,10 @@ def create_outline_view(window):
 
 def set_proper_scheme(view):
 
-    outline_settings = sublime.load_settings('latexoutline.sublime-settings')
-    if view.settings().get('color_scheme') == outline_settings.get('color_scheme'):
+    lo_settings = sublime.load_settings('latexoutline.sublime-settings')
+    if view.settings().get('color_scheme') == lo_settings.get('color_scheme'):
         return
-    view.settings().set('color_scheme', outline_settings.get('outline_color_scheme'))
+    view.settings().set('color_scheme', lo_settings.get('outline_color_scheme'))
 
 # --------------------------
 
