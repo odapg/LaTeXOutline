@@ -1,16 +1,18 @@
 [
   {
-    "caption": "LaTeXOutline (Right)",
+    "caption": "LaTeXOutline: sidebar on the Right",
     "command": "latex_outline",
     "args": {
-      "side": "right"
+      "side": "right",
+      "outline_type": "both"
     }
   },
   {
-    "caption": "LaTeXOutline (Left)",
+    "caption": "LaTeXOutline: sidebar on the Left",
     "command": "latex_outline",
     "args": {
-      "side": "left"
+      "side": "left",
+      "outline_type": "both"
     }
   },
   {

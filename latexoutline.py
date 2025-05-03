@@ -93,6 +93,7 @@ class LatexOutlineSyncEventHandler(EventListener):
             return
         if 'LaTeX.sublime-syntax' not in view.window().active_view().settings().get('syntax'):
             return
+        # Debouncer
         if view.settings().get('sync_in_progress'):
             return
         if not get_sidebar_status(view.window()):
@@ -207,8 +208,8 @@ class LatexOutlineEventHandler(EventListener):
                     "takealook", 
                     active_view.lines(Region(region[0],region[1])),
                     icon='Packages/LaTeXOutline/chevron.png',
-                    scope='region.bluish"',
-                    flags=128,
+                    scope='region.bluish',
+                    flags=1024,
                 )
                 active_view.show_at_center(region[0])
                 sublime.active_window().focus_view(active_view)

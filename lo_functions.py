@@ -359,7 +359,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
                 if name == 'equation':
                     ref = '(' + ref + ')'
                 if ref:
-                    new_sym = prefix["label"] + sym + ' (ref ' + ref +') ' + prefix["copy"] + prefix["takealook"]
+                    new_sym = prefix["label"] + sym + ' (ref ' + ref +') ' + prefix["copy"] 
                 else:
                     new_sym = prefix["label"] + sym + prefix["copy"]
         else:
@@ -368,7 +368,8 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
             else:
                 new_sym = prefix[type] + true_sym
 
-
+        new_sym += prefix["takealook"]
+        
         sym_list.append(
             {"region": (rgn.a, rgn.b),
              "type": type,

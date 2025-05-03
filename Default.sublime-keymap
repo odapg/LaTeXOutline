@@ -8,7 +8,7 @@
 
     { "keys": ["super+j", "a"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-        "args": {"side": "left", "outline_type": "full"},
+        "args": {"side": "left", "outline_type": "both"},
     },
     { "keys": ["super+j", "e"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
