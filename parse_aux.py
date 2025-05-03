@@ -103,8 +103,9 @@ def parse_writefile_line(line):
 
             entry_number = None
             entry_title = raw_text.strip()
+            
             test_toc = r'^\\toc[a-zA-Z0-9]+\s\{[0-9]*\}'
-            text_mbox = r'^\\mbox\s*\{(.*?)\}$'
+            text_mbox = r'^\\mbox\s*\{(.*?)\}(.*?)$'
 
             if raw_text.startswith('\\numberline'):
                 k = raw_text.find('{')
@@ -133,7 +134,7 @@ def parse_writefile_line(line):
 
             # Removes unnecessary mboxes
             if match := re.match(text_mbox, entry_number):
-                entry_number = match.group(1)
+                entry_number = match.group(1) + match.group(2)
 
             if entry_title.startswith('{\\ignorespaces'):
                 entry_title = entry_title[14:-1].strip()

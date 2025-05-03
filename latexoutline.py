@@ -241,13 +241,16 @@ class LatexOutlineEventHandler(EventListener):
         window.settings().erase('lo_new_layout')
 
 # -------------- 
-# Future: refresh the data collected from the .aux file after latex build
+# Future: refresh the view after .tex has been built
 
-    # def on_post_window_command(self, window, command_name, args):
-    #     if not window.active_view() or 'LaTeX.sublime-syntax' not in window.active_view().settings().get('syntax'):
-    #         return
-    #     if command_name != "show_panel":
-    #         return
-    #     if not args["panel"] or args["panel"] != "output.latextools":
-    #         return
-        
+    def on_post_window_command(self, window, command_name, args):
+        if not window.active_view() or 'LaTeX.sublime-syntax' not in window.active_view().settings().get('syntax'):
+            return
+        if command_name != "show_panel":
+            return
+        if not args["panel"] or args["panel"] != "output.latextools":
+            return
+        lo_view, lo_group = get_sidebar_view_and_group(window)
+        outline_type = lo_view.settings().get('current_outline_type')
+        refresh_lo_view(lo_view, window.active_view().file_name(), window.active_view(), outline_type)
+

@@ -24,6 +24,18 @@ lo_chars = {
     'label': '›',
     'copy': '❐',}
 
+contractions = {
+    'lemma': 'lem',
+    'theorem': 'thm',
+    'equation': 'eq',
+    'proposition': 'prop',
+    'figure': 'fig',
+    'section': 'sec',
+    'subsection': 'ssec',
+    'subsubsection': 'sssec',
+    'paragraph': 'par',
+}
+
 # ----------------------------------------------------------------
 
 # ----------------------------------------------------------------------------#
@@ -343,8 +355,9 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
             type = "frametitle"
         else:
             type = "label"
-        ts = normalize(true_sym)
+        
         if aux_data:
+            ts = normalize(true_sym)
             ref = next((entry['reference'] for  entry in aux_data #[n:]
                                     if ts == normalize(entry['main_content'])), None)
         else:
@@ -357,7 +370,15 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
         #     n += 1
             
         if type == "label":
-            new_sym = prefix["label"] + sym + prefix["copy"]
+            if aux_data:
+                ref, name = next(((entry['reference'], entry['entry_type']) for entry in aux_data #[n:]
+                                    if sym == entry['main_content']), ('',''))
+                if name == 'equation':
+                    ref = '(' + ref + ')'
+                if ref:
+                    new_sym = prefix["label"] + sym + ' (ref ' + ref +') ' + prefix["copy"]
+                else:
+                    new_sym = prefix["label"] + sym + prefix["copy"]
         else:
             if ref:
                 new_sym = prefix[type] + ref + ' ' + true_sym
@@ -447,5 +468,6 @@ def refresh_regions(lo_view, active_view, outline_type):
 # --------------------------
 def normalize(s):
     s = re.sub(r'\s+', ' ', s)
+    s = re.sub(r'\s+\}', '}', s)
     return unicodedata.normalize("NFC", s)
 

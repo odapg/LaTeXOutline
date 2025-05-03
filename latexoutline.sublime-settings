@@ -12,7 +12,7 @@
   "outline_color_scheme": "LaTeXOutline-custom.hidden-color-scheme",
   
   // Width proportion for the outline sidebar: keep between 0.1 and 0.9
-  "outline_width": 0.2,
+  "outline_width": 0.22,
 
   // To customize
   "font_face": "",
