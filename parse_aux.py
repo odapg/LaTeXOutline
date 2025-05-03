@@ -3,22 +3,10 @@
 
 import re
 
-# from .lo_functions import chars
-lo_chars = {
-    'part': '■',
-    'chapter': '𑗕',
-    'section': '⏺',
-    'subsection': '⊛',
-    'subsubsection': '‣',
-    'paragraph': '⸱',
-    'frametitle': '▫'
-    }
-
 def extract_brace_group(s, start):
     """Extract content inside balanced braces starting at position `start`."""
     if s[start] != '{':
         return None
-        # raise ValueError("Expected opening brace at position {}".format(start))
 
     depth = 0
     i = start
@@ -32,7 +20,6 @@ def extract_brace_group(s, start):
         i += 1
         
     return None
-    # raise ValueError("Unmatched braces in string starting at position {}".format(start))
 
 
 def parse_newlabel_line(line):
@@ -141,8 +128,6 @@ def parse_writefile_line(line):
 
             entry_title = re.sub(r'\\([a-zA-Z0-9]+)\s+{', r'\\\1{', entry_title)
 
-
-
             return {
                 'source': 'writefile',
                 'type': file_type,
@@ -176,65 +161,3 @@ def parse_aux_file(filename):
                 entries.append(parsed)
 
     return entries
-
-
-# ---- Various print functions ----
-
-def print_sections(sec_data):        
-    print("-------- Sections")
-    for entry in sec_data: 
-        type = entry['entry_type'].title()
-        num = str(entry['num'])
-        title = entry['entry_title']
-        print(type + " " + num + ". " + title)
-
-def print_labels(lab_data):    
-    print("-------- Labels")
-    for entry in lab_data: 
-        type = entry['entry_type'].title()
-        num = "(" + str(entry['num']) + ")" if entry['entry_type'] == 'equation' else str(entry['num'])
-        label = entry['name']
-        print(type + " " + num + ": " + label + "  📋" )
-
-def print_raw_data(all_data):
-    for entry in all_data:
-        print("\n--- Entry ---")
-        for key, value in entry.items():
-            print(f"{key}: {value}")
-
-def print_all_data(all_data):
-    for entry in all_data:
-        if entry['source'] =='writefile' and entry['file'] == 'toc':
-            if entry['entry_type'] in section_types:
-                bullet = lo_chars[entry['entry_type']]
-            else:
-                bullet = "◦"
-            type = entry['entry_type'].title()
-            num = str(entry['num'])
-            title = entry['entry_title']
-            print(bullet + " " + num + ". " + title) # + " " + type
-        elif entry['source'] =='newlabel':
-            if entry['entry_type'] in section_types:
-                print("   ↪ " + "  📋" )    
-            else:
-                if entry['entry_type'] == 'equation':
-                    num = "(" + str(entry['num']) + ")"
-                    type = "Eq."
-                else:
-                    num = str(entry['num'])
-                    type = entry['entry_type'].title()
-                label = entry['name']
-                print(" ◦ " + type + " " + num + "  📋" )
-
-# Example usage
-if __name__ == '__main__':
-   aux_file = '/Users/glass/Documents/Dropbox/Fabio-Khai-Olivier/One-side/2025/1-OSBC-June2019.aux'
-           #'/Users/glass/maths/Peut-être ?/Bergman-2025/Article/heat-controls.aux' 
-   section_types = ('part', 'chapter', 'section', 'subsection', 'subsubsection', 'paragraph', 'frametitle')
-   all_data = parse_aux_file(aux_file)
-#    # sec_data = [d for d in all_data if d['source'] =='writefile' and d['file'] == 'toc']
-#    # lab_data = [d for d in all_data if d['source'] =='newlabel']
-   print_raw_data(all_data)
-
-
-

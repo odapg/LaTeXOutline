@@ -25,18 +25,6 @@ lo_chars = {
     'copy': '❐',
     'takealook': '◎',}
 
-contractions = {
-    'lemma': 'lem',
-    'theorem': 'thm',
-    'equation': 'eq',
-    'proposition': 'prop',
-    'figure': 'fig',
-    'section': 'sec',
-    'subsection': 'ssec',
-    'subsubsection': 'sssec',
-    'paragraph': 'par',
-}
-
 # ----------------------------------------------------------------
 
 # ----------------------------------------------------------------------------#
@@ -76,7 +64,6 @@ def refresh_lo_view(lo_view, path, view, outline_type):
 
     # Get the section list
     aux_data = get_aux_file_data(path)
-    # print(aux_data)
     unfiltered_st_symlist = get_st_symbols(view, outline_type)
     sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type, aux_data)
     active_view_id = view.id()
@@ -360,20 +347,14 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
         
         if aux_data:
             ts = normalize(true_sym)
-            ref = next((entry['reference'] for  entry in aux_data #[n:]
+            ref = next((entry['reference'] for  entry in aux_data
                                     if ts == normalize(entry['main_content'])), None)
         else:
             ref = None
-        # ref = next(((i, entry['reference']) for i, entry in enumerate(aux_data) #[n:]
-        #                         if ts == normalize(entry['main_content'])), None)
-        # if ref:
-        #     n += ref[0]
-        # # else:
-        #     n += 1
             
         if type == "label":
             if aux_data:
-                ref, name = next(((entry['reference'], entry['entry_type']) for entry in aux_data #[n:]
+                ref, name = next(((entry['reference'], entry['entry_type']) for entry in aux_data
                                     if sym == entry['main_content']), ('',''))
                 if name == 'equation':
                     ref = '(' + ref + ')'
@@ -443,7 +424,6 @@ def get_aux_file_data(path):
         aux_file = os.path.splitext(path)[0] + ".aux"
         if os.path.exists(aux_file):
             all_data = parse_aux_file(aux_file)
-            # print(all_data)
             return all_data
     else:
         return None
