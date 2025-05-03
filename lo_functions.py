@@ -12,7 +12,7 @@ from .parse_aux import parse_aux_file
 
 # -------------------------- Characters --------------------------
 # Changes here should also be reported in latexoutline.sublime-syntax
-# Suggestions: ▪ ⌑ ⦾ ⁌ ∙ ◦ ⦿ ■ 𑗕 ◉ • ⸱ ‣ ▫ ⊙ ⊛ ⏺ ⏿
+# Suggestions: ▪ ⌑ ⦾ ⁌ ∙ ◦ ⦿ ■ 𑗕 ◉ • ⸱ ‣ ▫ ⊙ ⊛ ⏺ ʘ ⏿
 lo_chars = {
     'part': '■',
     'chapter': '𑗕',
@@ -22,7 +22,8 @@ lo_chars = {
     'paragraph': '⸱',
     'frametitle': '▫',
     'label': '›',
-    'copy': '❐',}
+    'copy': '❐',
+    'takealook': '◎',}
 
 contractions = {
     'lemma': 'lem',
@@ -75,7 +76,7 @@ def refresh_lo_view(lo_view, path, view, outline_type):
 
     # Get the section list
     aux_data = get_aux_file_data(path)
-    print(aux_data)
+    # print(aux_data)
     unfiltered_st_symlist = get_st_symbols(view, outline_type)
     sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type, aux_data)
     active_view_id = view.id()
@@ -324,6 +325,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
     "frametitle" : lo_chars['frametitle'] + ' ',
     "label" : '  ' + lo_chars['label'],
     "copy" : ' ' + lo_chars['copy'] + ' ',
+    "takealook" : ' ' + lo_chars['takealook'] + ' ',
     }
 
     sym_list = []
@@ -376,7 +378,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
                 if name == 'equation':
                     ref = '(' + ref + ')'
                 if ref:
-                    new_sym = prefix["label"] + sym + ' (ref ' + ref +') ' + prefix["copy"]
+                    new_sym = prefix["label"] + sym + ' (ref ' + ref +') ' + prefix["copy"] + prefix["takealook"]
                 else:
                     new_sym = prefix["label"] + sym + prefix["copy"]
         else:

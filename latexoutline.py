@@ -198,7 +198,24 @@ class LatexOutlineEventHandler(EventListener):
                 lo_view.sel().clear()
                 sublime.active_window().focus_view(active_view)
                 return
+
+            # If the takealook symbol ◎ was pressed
+            if 'takealook' in sel_scope:
+                symlist = lo_view.settings().get('symlist')
+                region = symlist[row]["region"]
+                active_view.add_regions(
+                    "takealook", 
+                    active_view.lines(Region(region[0],region[1])),
+                    icon='Packages/LaTeXOutline/chevron.png',
+                    scope='region.bluish"',
+                    flags=128,
+                )
+                active_view.show_at_center(region[0])
+                sublime.active_window().focus_view(active_view)
+                sublime.set_timeout_async(lambda: active_view.erase_regions("takealook"), 5000)
+                return
             
+
             # otherwise, go to the corresponding region or copy the section label
             # if the bullet is pressed
 
