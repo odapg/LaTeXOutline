@@ -362,6 +362,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
             type = "frametitle"
         else:
             type = "label"
+            true_sym = sym
         
         if aux_data:
             ts = normalize(true_sym)
@@ -374,12 +375,13 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
             if aux_data:
                 ref, name = next(((entry['reference'], entry['entry_type']) for entry in aux_data
                                     if sym == entry['main_content']), ('',''))
-                if name == 'equation':
-                    ref = '(' + ref + ')'
-                if ref:
-                    new_sym = prefix["label"] + sym + ' (ref ' + ref +') ' + prefix["copy"] 
-                else:
-                    new_sym = prefix["label"] + sym + prefix["copy"]
+            if ref and name == 'equation':
+                ref = '(' + ref + ')'
+                new_sym = prefix["label"] + true_sym + ' (eq. ' + ref +') ' + prefix["copy"] 
+            elif ref:
+                new_sym = prefix["label"] + true_sym + ' (ref ' + ref +') ' + prefix["copy"] 
+            else:
+                new_sym = prefix["label"] + true_sym + prefix["copy"]
         else:
             if '*' in type:
                 new_sym = prefix[type[:-1]] + '* ' + true_sym
@@ -465,11 +467,11 @@ def refresh_regions(lo_view, active_view, outline_type):
             if y == key:
                 first = unfiltered_st_symlist.pop(i)
                 break      
-        # region = next((reg for reg, sym in unfiltered_st_symlist if sym == key), None)
 
         if first:
             region = first[0]
             item["region"] = (region.a, region.b)
+
     lo_view.settings().set('symlist', new_sym_list)
     return 
 

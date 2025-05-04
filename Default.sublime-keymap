@@ -3,8 +3,9 @@
 //
 // outline_type: "toc" toggles the table of contents
 //               "full" toggles the table of contents and labels view
-//               "both" switches between "toc", "full" and nothing
+//               "both" switches between "toc" and "full"
 // side: "left" or "right"
+// close_on_repeated_use: true or false
 
     { "keys": ["super+j", "a"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
