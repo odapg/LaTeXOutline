@@ -22,7 +22,7 @@
     "command": "latex_outline",
     "args": {
       "side": "right",
-      "outline_type": "both",
+      "outline_type": "full",
       "close_on_repeated_use": false
     }
   },
@@ -31,7 +31,7 @@
     "command": "latex_outline",
     "args": {
       "side": "left",
-      "outline_type": "both",
+      "outline_type": "full",
       "close_on_repeated_use": false
     }
   },

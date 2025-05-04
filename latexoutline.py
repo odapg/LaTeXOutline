@@ -29,8 +29,7 @@ class LatexOutlineCommand(WindowCommand):
             current_side = lo_view.settings().get('side')
             current_type = lo_view.settings().get('current_outline_type')
 
-            if (current_side == side and current_type == type 
-                and not close_on_repeated_use):
+            if current_side == side and current_type == outline_type and not close_on_repeated_use:
                 return
                 
             self.window.run_command('latex_outline_close_sidebar')
