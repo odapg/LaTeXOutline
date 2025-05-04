@@ -3,6 +3,8 @@
 
 import re
 
+
+# --------------------------
 def extract_brace_group(s, start):
     """Extract content inside balanced braces starting at position `start`."""
     if s[start] != '{':
@@ -22,6 +24,7 @@ def extract_brace_group(s, start):
     return None
 
 
+# --------------------------
 def parse_newlabel_line(line):
     """Parse a line starting with \newlabel and extract label info."""
     if not line.startswith('\\newlabel'):
@@ -68,15 +71,17 @@ def parse_newlabel_line(line):
         return None
 
 
+# --------------------------
 def parse_writefile_line(line):
     """Parse a \@writefile line and split entry_text into number and title."""
     if not line.startswith('\\@writefile'):
         return None
 
+    line = str(line)
     try:
         i = line.find('{')
         file_type, i = extract_brace_group(line, i)
-        content, i = extract_brace_group(line, i)
+        content, _ = extract_brace_group(line, i)
 
         if content.startswith('\\contentsline'):
             j = content.find('{')
@@ -85,14 +90,14 @@ def parse_writefile_line(line):
             page_number, j = extract_brace_group(content, j)
 
             # Attempt to extract optional extra field and ignore it
-            if j < len(content) and content[j] == '{':
+            while j < len(content) and content[j] == '{':
                 _, j = extract_brace_group(content, j)
 
             entry_number = None
             entry_title = raw_text.strip()
             
             test_toc = r'^\\toc[a-zA-Z0-9]+\s\{[0-9]*\}'
-            text_mbox = r'^\\mbox\s*\{(.*?)\}(.*?)$'
+            test_mbox = r'^\\mbox\s*\{(.*?)\}(.*?)$'
 
             if raw_text.startswith('\\numberline'):
                 k = raw_text.find('{')
@@ -120,13 +125,14 @@ def parse_writefile_line(line):
                         entry_title = raw_text[hspace_brace_end+1:].strip()
 
             # Removes unnecessary mboxes
-            if match := re.match(text_mbox, entry_number):
+            if match := re.match(test_mbox, str(entry_number)):
                 entry_number = match.group(1) + match.group(2)
-
+            
             if entry_title.startswith('{\\ignorespaces'):
                 entry_title = entry_title[14:-1].strip()
 
             entry_title = re.sub(r'\\([a-zA-Z0-9]+)\s+{', r'\\\1{', entry_title)
+
 
             return {
                 'source': 'writefile',

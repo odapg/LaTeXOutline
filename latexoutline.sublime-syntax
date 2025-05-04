@@ -13,7 +13,7 @@ variables:
   ftitle_char: '▫'
   label_char: '›'
   copy_char: '❐'
-  takealook_char: '◎'
+  takealook_char: '⌖'
 
 contexts:
   main:

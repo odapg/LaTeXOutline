@@ -12,7 +12,7 @@ from .parse_aux import parse_aux_file
 
 # -------------------------- Characters --------------------------
 # Changes here should also be reported in latexoutline.sublime-syntax
-# Suggestions: ▪ ⌑ ⦾ ⁌ ∙ ◦ ⦿ ■ 𑗕 ◉ • ⸱ ‣ ▫ ⊙ ⊛ ⏺ ʘ ⏿
+# Suggestions: ▪ ⌑ ⦾ ⁌ ∙ ◦ ⦿ ■ 𑗕 ◉ • ⸱ ‣ ▫ ⊙ ⊛ ⏺ ʘ ⏿ ◎ ⦿ ⌖
 lo_chars = {
     'part': '■',
     'chapter': '𑗕',
@@ -23,7 +23,7 @@ lo_chars = {
     'frametitle': '▫',
     'label': '›',
     'copy': '❐',
-    'takealook': '◎',}
+    'takealook': '⌖',}
 
 # ----------------------------------------------------------------
 
@@ -287,10 +287,10 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
     Prepares their presentation in the LO view, put it in the 'symlist' setting
     '''
     if outline_type == "toc":
-        pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle):.*'
+        pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*'
         filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
     else:
-        pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle):.*|[^\\].*'
+        pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*|[^\\].*'
         filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
         
     part_list = [x for x in unfiltered_symlist if x[1].startswith("Part:")]
@@ -324,21 +324,39 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
         if sym.startswith('Part: '):
             true_sym = sym[6:]
             type = "part"
+        elif sym.startswith('Part*: '):
+            true_sym = sym[7:]
+            type = "part*"
         elif sym.startswith('Chapter: '):
             true_sym = sym[9:]
             type = "chapter"
+        elif sym.startswith('Chapter*: '):
+            true_sym = sym[10:]
+            type = "chapter*"
         elif sym.startswith('Section: '):
             true_sym = sym[9:]
             type = "section"
+        elif sym.startswith('Section*: '):
+            true_sym = sym[10:]
+            type = "section*"
         elif sym.startswith('Subsection: '):
             true_sym = sym[12:]
             type = "subsection"
+        elif sym.startswith('Subsection*: '):
+            true_sym = sym[13:]
+            type = "subsection*"
         elif sym.startswith('Subsubsection: '):
             true_sym = sym[15:]
             type = "subsubsection"
+        elif sym.startswith('Subsubsection*: '):
+            true_sym = sym[16:]
+            type = "subsubsection*"
         elif sym.startswith('Paragraph: '):
             true_sym = sym[11:]
             type = "paragraph"
+        elif sym.startswith('Paragraph*: '):
+            true_sym = sym[12:]
+            type = "paragraph*"
         elif sym.startswith('Frametitle: '):
             true_sym = sym[12:]
             type = "frametitle"
@@ -363,7 +381,9 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
                 else:
                     new_sym = prefix["label"] + sym + prefix["copy"]
         else:
-            if ref:
+            if '*' in type:
+                new_sym = prefix[type[:-1]] + '* ' + true_sym
+            elif ref:
                 new_sym = prefix[type] + ref + ' ' + true_sym
             else:
                 new_sym = prefix[type] + true_sym
@@ -376,7 +396,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
              "content": sym,
              "fancy_content": new_sym}
         )
-    
+
     return sym_list
 
 # --------------------------
@@ -441,14 +461,20 @@ def refresh_regions(lo_view, active_view, outline_type):
     new_sym_list = sym_list
     for item in sym_list:
         key = item["content"]
-        region = next((reg for reg, sym in unfiltered_st_symlist if sym == key), None)
-        if region:
+        for i, (x, y) in enumerate(unfiltered_st_symlist):
+            if y == key:
+                first = unfiltered_st_symlist.pop(i)
+                break      
+        # region = next((reg for reg, sym in unfiltered_st_symlist if sym == key), None)
+
+        if first:
+            region = first[0]
             item["region"] = (region.a, region.b)
     lo_view.settings().set('symlist', new_sym_list)
     return 
 
-
 # --------------------------
+
 def normalize(s):
     s = re.sub(r'\s+', ' ', s)
     s = re.sub(r'\s+\}', '}', s)
