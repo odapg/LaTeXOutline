@@ -35,6 +35,11 @@ It only works with *single-file* LaTeX documents.
 
    Click on a section's *bullet* in the LaTeXOutline tab to copy the section's corresponding label in the clipboard. A message is given in the status bar below to indicate if this label has been found.
 
+### Known issues
+
+- LaTeXOutline does not work with multiple-files LaTeX projects. The commands `\input{other.tex}` are not taken into account.
+- Section numbering does not work with the use of the `cleveref` package or `\texorpdfstring` commands in a section. It is likely that many packages interfering with the `.aux` file can create issues as well.
+
 ### License
 
 This plugin is licensed under the MIT license. In particular, it is provided "as is", without warranty of any kind!
