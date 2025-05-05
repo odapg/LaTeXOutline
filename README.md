@@ -38,7 +38,7 @@ It only works with *single-file* LaTeX documents.
 ### Known issues
 
 - LaTeXOutline does not work with multiple-files LaTeX projects. The commands `\input{other.tex}` are not taken into account.
-- Section numbering does not work with the use of the `cleveref` package or `\texorpdfstring` commands in a section. It is likely that many packages interfering with the `.aux` file can create issues as well.
+- Section numbering does not work with the use of the `cleveref` package or the `\texorpdfstring` command in a section. It is likely that many packages interfering with the `.aux` file can create issues as well.
 
 ### License
 
@@ -46,4 +46,4 @@ This plugin is licensed under the MIT license. In particular, it is provided "as
 
 ### Acknowledgements
 
-LaTeXOutline is originally a specific adaptation of warmdev's original [SublimeOutline](https://github.com/warmdev/SublimeOutline) to LaTeX files, using modifications due to vlad-wonderkidstudio, see [SublimeOutline](https://github.com/vlad-wonderkidstudio/SublimeOutline). It still uses a significant part of this code.
+LaTeXOutline is originally a specific adaptation of warmdev's original [SublimeOutline](https://github.com/warmdev/SublimeOutline) to LaTeX files, also using modifications due to vlad-wonderkidstudio, see [SublimeOutline](https://github.com/vlad-wonderkidstudio/SublimeOutline). It still uses a significant part of this code.

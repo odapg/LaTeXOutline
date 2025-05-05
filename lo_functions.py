@@ -38,7 +38,7 @@ def show_outline(window, side="right", outline_type="toc"):
     """
     Creates the outline view. 
     Filling it will be taken care of by LatexOutlineEventHandler which in
-    particular calls the LatexOutlineRefresh command.
+    particular calls the LatexOutlineFillSidebar command.
     """
 
     # Creates the outline view otherwise
@@ -60,7 +60,7 @@ def show_outline(window, side="right", outline_type="toc"):
 # --------------------------
 
 def refresh_lo_view(lo_view, path, view, outline_type):
-    '''Prepare the use of latex_outline_refresh command'''
+    '''Refresh the contents of the outline view'''
 
     # Get the section list
     aux_data = get_aux_file_data(path)
@@ -70,7 +70,7 @@ def refresh_lo_view(lo_view, path, view, outline_type):
 
     if lo_view is not None:
         lo_view.settings().erase('symlist')
-        lo_view.run_command('latex_outline_refresh', 
+        lo_view.run_command('latex_outline_fill_sidebar', 
                                 {'symlist': sym_list,
                                  'path': path,
                                  'active_view': active_view_id}

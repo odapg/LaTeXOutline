@@ -41,6 +41,11 @@
     "args": {}
   },
   {
+    "caption": "LaTeXOutline: Freshen sidebar",
+    "command": "latex_outline_refresh",
+    "args": {}
+  },
+  {
     "caption": "LaTeXOutline: Settings",
     "command": "edit_settings",
     "args": {
