@@ -103,7 +103,7 @@ class LatexOutlineRefreshCommand(WindowCommand):
 
 
 # ----------------------------------------------------
-# Fills the contents of the outline view
+# Fills the contents of the outline view (not to be used directly)
 
 class LatexOutlineFillSidebarCommand(TextCommand):
 

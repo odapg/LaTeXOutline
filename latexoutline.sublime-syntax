@@ -3,6 +3,7 @@
 name: LaTeXOutline
 file_extensions: latexoutline
 scope: text.latexoutline
+hidden:  true
 variables:
   part_char: '■'
   chap_char: '𑗕'

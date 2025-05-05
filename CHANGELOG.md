@@ -7,6 +7,7 @@
 - Adds section numbers and label references by parsing the .aux file (experimental).
 - Now also considers \section*{...} etc.
 - Corrects a bug occurring when two sections have the same name.
+- Small corrections.
 
 
 #### Version 2.0
