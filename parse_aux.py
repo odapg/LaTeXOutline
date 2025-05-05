@@ -26,7 +26,7 @@ def extract_brace_group(s, start):
 
 # --------------------------
 def parse_newlabel_line(line):
-    """Parse a line starting with \newlabel and extract label info."""
+    """Parse a line starting with newlabel and extract label info."""
     if not line.startswith('\\newlabel'):
         return None
 
@@ -73,7 +73,7 @@ def parse_newlabel_line(line):
 
 # --------------------------
 def parse_writefile_line(line):
-    """Parse a \@writefile line and split entry_text into number and title."""
+    """Parse a line starting with writefile and extract info (sections)."""
     if not line.startswith('\\@writefile'):
         return None
 

@@ -63,9 +63,8 @@ def refresh_lo_view(lo_view, path, view, outline_type):
     '''Refresh the contents of the outline view'''
 
     # Get the section list
-    aux_data = get_aux_file_data(path)
     unfiltered_st_symlist = get_st_symbols(view, outline_type)
-    sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type, aux_data)
+    sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type, path)
     active_view_id = view.id()
 
     if lo_view is not None:
@@ -281,11 +280,12 @@ def get_sidebar_status(window):
 
 # --------------------------
 
-def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
+def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
     '''
     Filters the symlist to only show sections and labels
     Prepares their presentation in the LO view, put it in the 'symlist' setting
     '''
+
     if outline_type == "toc":
         pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*'
         filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
@@ -315,6 +315,8 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
     "takealook" : ' ' + lo_chars['takealook'] + ' ',
     }
 
+    aux_data = get_aux_file_data(path)
+    
     sym_list = []
     n=0
     for item in filtered_symlist:
@@ -364,12 +366,14 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, aux_data):
             type = "label"
             true_sym = sym
         
+        ref = None
         if aux_data:
             ts = normalize(true_sym)
-            ref = next((entry['reference'] for  entry in aux_data
-                                    if ts == normalize(entry['main_content'])), None)
-        else:
-            ref = None
+            for i, item in enumerate(aux_data):
+                if ts == item['main_content']:
+                    correct_item = aux_data.pop(i)
+                    ref = correct_item['reference']
+                    break      
             
         if type == "label":
             if aux_data:
@@ -460,6 +464,7 @@ def refresh_regions(lo_view, active_view, outline_type):
     sym_list = lo_view.settings().get('symlist')
     unfiltered_st_symlist = get_st_symbols(active_view, outline_type)
 
+    first=None
     new_sym_list = sym_list
     for item in sym_list:
         key = item["content"]
