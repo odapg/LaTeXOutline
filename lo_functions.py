@@ -338,12 +338,19 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
         ref = None
         if aux_data:
             ts = normalize(true_sym)
-            for i, item in enumerate(aux_data):
-                if ts == item['main_content']:
+            for i, data_item in enumerate(aux_data):
+                if ts == data_item['main_content']:
                     correct_item = aux_data.pop(i)
                     ref = correct_item['reference']
-                    break      
-            
+                    break
+                # This is less precise and can lead to errors
+                elif ( 
+                    re.sub(r'\$.*?\$', '', ts) == re.sub(r'\$.*?\$', '', data_item['main_content'])
+                    and type == data_item['entry_type']):
+                    correct_item = aux_data.pop(i)
+                    ref = correct_item['reference']
+                    break
+
         if type == "label":
             if aux_data:
                 ref, name = next(((entry['reference'], entry['entry_type']) for entry in aux_data
@@ -378,8 +385,8 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
 
 def get_st_symbols(view, outline_type):
     '''
-    Ask ST for the symbol list and apply a first filter according 
-    to the outline chose type
+    Ask ST for the symbols list and apply a first filter according 
+    to the chosen outline type
     '''
     if outline_type == "toc":
         unfiltered_st_symlist = [
