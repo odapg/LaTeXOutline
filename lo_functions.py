@@ -323,48 +323,17 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
         rgn = item[0]
         sym = item[1]
 
-        if sym.startswith('Part: '):
-            true_sym = sym[6:]
-            type = "part"
-        elif sym.startswith('Part*: '):
-            true_sym = sym[7:]
-            type = "part*"
-        elif sym.startswith('Chapter: '):
-            true_sym = sym[9:]
-            type = "chapter"
-        elif sym.startswith('Chapter*: '):
-            true_sym = sym[10:]
-            type = "chapter*"
-        elif sym.startswith('Section: '):
-            true_sym = sym[9:]
-            type = "section"
-        elif sym.startswith('Section*: '):
-            true_sym = sym[10:]
-            type = "section*"
-        elif sym.startswith('Subsection: '):
-            true_sym = sym[12:]
-            type = "subsection"
-        elif sym.startswith('Subsection*: '):
-            true_sym = sym[13:]
-            type = "subsection*"
-        elif sym.startswith('Subsubsection: '):
-            true_sym = sym[15:]
-            type = "subsubsection"
-        elif sym.startswith('Subsubsection*: '):
-            true_sym = sym[16:]
-            type = "subsubsection*"
-        elif sym.startswith('Paragraph: '):
-            true_sym = sym[11:]
-            type = "paragraph"
-        elif sym.startswith('Paragraph*: '):
-            true_sym = sym[12:]
-            type = "paragraph*"
-        elif sym.startswith('Frametitle: '):
-            true_sym = sym[12:]
-            type = "frametitle"
+        pattern = (
+            r'^(Part\*?|Chapter\*?|Section\*?|Subsection\*?|'
+            r'Subsubsection\*?|Paragraph\*?|Frametitle): (.+)'
+        )
+        match = re.match(pattern, sym)
+        if match:
+            type = match.group(1).lower()
+            true_sym = match.group(2)
         else:
-            type = "label"
-            true_sym = sym
+           type = "label"
+           true_sym = sym
         
         ref = None
         if aux_data:
