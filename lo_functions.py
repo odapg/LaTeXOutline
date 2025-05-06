@@ -345,7 +345,8 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
                     break
                 # This is less precise and can lead to errors
                 elif ( 
-                    re.sub(r'\$.*?\$', '', ts) == re.sub(r'\$.*?\$', '', data_item['main_content'])
+                    normalize(re.sub(r'\$.*?\$', '', true_sym))
+                        == normalize(re.sub(r'\$.*?\$', '', data_item['main_content']))
                     and type == data_item['entry_type']):
                     correct_item = aux_data.pop(i)
                     ref = correct_item['reference']
@@ -459,7 +460,9 @@ def refresh_regions(lo_view, active_view, outline_type):
 # --------------------------
 
 def normalize(s):
+    s = re.sub(r'\\nonbreakingspace\s+', '~', s)
+    # s = re.sub(r'\s+\}', '}', s)
     s = re.sub(r'\s+', ' ', s)
-    s = re.sub(r'\s+\}', '}', s)
+    s = s.strip()
     return unicodedata.normalize("NFC", s)
 

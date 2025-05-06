@@ -8,11 +8,11 @@ import re
 def extract_brace_group(s, start):
     """Extract content inside balanced braces starting at position `start`."""
     if s[start] != '{':
-        return None
+        raise ValueError("Expected opening brace at position {}".format(start))
 
     depth = 0
     i = start
-    while i < len(s):
+    while i <= len(s):
         if s[i] == '{':
             depth += 1
         elif s[i] == '}':
@@ -20,8 +20,8 @@ def extract_brace_group(s, start):
             if depth == 0:
                 return s[start+1:i], i + 1  # exclude outer braces
         i += 1
-        
-    return None
+
+    raise ValueError("Unmatched braces in string starting at position {}".format(start))
 
 
 # --------------------------
@@ -87,6 +87,7 @@ def parse_writefile_line(line):
             j = content.find('{')
             entry_type, j = extract_brace_group(content, j)
             raw_text, j = extract_brace_group(content, j)
+            print(raw_text)
             page_number, j = extract_brace_group(content, j)
 
             # Attempt to extract optional extra field and ignore it
@@ -96,24 +97,25 @@ def parse_writefile_line(line):
             entry_number = None
             entry_title = raw_text.strip()
             
-            test_toc = r'^\\toc[a-zA-Z0-9]+\s\{[0-9]*\}'
+            test_toc = r'^\\toc[a-z]+\s\{[0-9]*\}'
             test_mbox = r'^\\mbox\s*\{(.*?)\}(.*?)$'
 
             if raw_text.startswith('\\numberline'):
                 k = raw_text.find('{')
                 entry_number, k = extract_brace_group(raw_text, k)
                 entry_title = raw_text[k:].lstrip()
-                if entry_title.startswith('}'):
-                    entry_title = entry_title[1:].lstrip()
             
             # Case {\section{}{...}}
             elif re.match(test_toc, raw_text):
                 raw_text = re.sub(test_toc, '', raw_text, count=1)
                 k = raw_text.find('{')
                 entry_number, k = extract_brace_group(raw_text, k)
-                entry_title = raw_text[k:].lstrip().lstrip('{').rstrip('}')
-                if entry_title.startswith('}'):
+                entry_title = raw_text[k:].lstrip()
+                if entry_title.startswith('{'):
                     entry_title = entry_title[1:].lstrip()
+                    if entry_title.endswith('}'):
+                        entry_title = entry_title[:-1].rstrip()
+                print(entry_title)
 
             elif '\\hspace' in raw_text:
                 split_index = raw_text.find('\\hspace')
@@ -129,7 +131,8 @@ def parse_writefile_line(line):
                 entry_number = match.group(1) + match.group(2)
             
             if entry_title.startswith('{\\ignorespaces'):
-                entry_title = entry_title[14:-1].strip()
+                full_group, _ = extract_brace_group(entry_title, 0)
+                entry_title = full_group[len('\\ignorespaces'):].strip()
 
             entry_title = re.sub(r'\\([a-zA-Z0-9]+)\s+{', r'\\\1{', entry_title)
 
