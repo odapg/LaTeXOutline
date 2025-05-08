@@ -369,12 +369,11 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
             simple_sym = re.sub(r'\\label\{[^\}]*\}\s+', '', simple_sym)
             simple_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', simple_sym)
             if '*' in type:
-                new_sym = prefix[type[:-1]] + '* ' + simple_sym
+                new_sym = prefix[type[:-1]] + '* ' + simple_sym + prefix["takealook"]
             elif ref:
-                new_sym = prefix[type] + ref + ' ' + simple_sym
+                new_sym = prefix[type] + ref + ' ' + simple_sym + prefix["takealook"]
             else:
-                new_sym = prefix[type] + simple_sym
-        new_sym += prefix["takealook"]
+                new_sym = prefix[type] + simple_sym + prefix["takealook"]
         
         # Creates the entry of the generated symbol list
         sym_list.append(

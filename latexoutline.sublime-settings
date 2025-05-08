@@ -5,7 +5,7 @@
 
   // true: show the section numbers (can sometimes be inaccurate)
   // false: only present section with bullets
-  "show_section_numbers": false,
+  "show_section_numbers": true,
 
   // true: latexoutline will use the same color scheme as current file
   // false: latexoutline will use the color scheme defined below (default)
