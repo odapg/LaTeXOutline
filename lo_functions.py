@@ -323,7 +323,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
         rgn = item[0]
         sym = re.sub(r'\n', ' ', item[1])
 
-        # Get the entry types and content
+        # Get the ST symbol entry type and content
         pattern = (
             r'^(Part\*?|Chapter\*?|Section\*?|Subsection\*?|'
             r'Subsubsection\*?|Paragraph\*?|Frametitle): (.+)'
@@ -377,14 +377,25 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
                 new_sym = prefix[type] + true_sym
         new_sym += prefix["takealook"]
         
+        # Creates the entry of the generated symbol list
         sym_list.append(
             {"region": (rgn.a, rgn.b),
              "type": type,
              "content": sym,
-             "fancy_content": new_sym}
+             "fancy_content": new_sym,
+             "ref": ref}
             )
+    
+    # Last chance
+    refless_items = [sym for sym in sym_list if sym["type"] != "label" and ref is None]
+
+    if len(filtered_symlist)>0:
+        for sym in refless_items:
+            pass
+    # To remove
     print("---  filtered_symlist ---")
     print(filtered_symlist)
+
     return sym_list
 
 # --------------------------
