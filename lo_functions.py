@@ -319,7 +319,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
     
     sym_list = []
     n=0
-    for item in filtered_symlist:
+    for item in filtered_symlist[:]:
         rgn = item[0]
         sym = re.sub(r'\n', ' ', item[1])
 
@@ -334,8 +334,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
         else:
            type = "label"
            true_sym = sym
-        print(sym)
-        print(true_sym)
+           filtered_symlist.remove(item)
         
         ref = None
         if aux_data:
@@ -343,6 +342,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
             for i, data_item in enumerate(aux_data):
                 if ts == data_item['main_content']:
                     correct_item = aux_data.pop(i)
+                    filtered_symlist.remove(item)
                     ref = correct_item['reference']
                     break
                 # This is less precise and can lead to errors
@@ -351,9 +351,11 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
                         == normalize(re.sub(r'\$.*?\$', '', data_item['main_content']))
                     and type == data_item['entry_type']):
                     correct_item = aux_data.pop(i)
+                    filtered_symlist.remove(item)
                     ref = correct_item['reference']
                     break
 
+        # Labels
         if type == "label":
             if aux_data:
                 ref, name = next(((entry['reference'], entry['entry_type']) for entry in aux_data
@@ -365,6 +367,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
                 new_sym = prefix["label"] + true_sym + ' (ref ' + ref +') ' + prefix["copy"] 
             else:
                 new_sym = prefix["label"] + true_sym + prefix["copy"]
+        # Sections
         else:
             if '*' in type:
                 new_sym = prefix[type[:-1]] + '* ' + true_sym
