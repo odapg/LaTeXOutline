@@ -87,7 +87,6 @@ def parse_writefile_line(line):
             j = content.find('{')
             entry_type, j = extract_brace_group(content, j)
             raw_text, j = extract_brace_group(content, j)
-            print(raw_text)
             page_number, j = extract_brace_group(content, j)
 
             # Attempt to extract optional extra field and ignore it
@@ -96,17 +95,10 @@ def parse_writefile_line(line):
 
             entry_number = None
             entry_title = raw_text.strip()
-            
-            test_toc = r'^\\toc[a-z]+\s\{[0-9]*\}'
-            test_mbox = r'^\\mbox\s*\{(.*?)\}(.*?)$'
 
-            if raw_text.startswith('\\numberline'):
-                k = raw_text.find('{')
-                entry_number, k = extract_brace_group(raw_text, k)
-                entry_title = raw_text[k:].lstrip()
-            
             # Case {\section{}{...}}
-            elif re.match(test_toc, raw_text):
+            test_toc = r'^\\toc[a-z]+\s\{[0-9]*\}'
+            if re.match(test_toc, raw_text):
                 raw_text = re.sub(test_toc, '', raw_text, count=1)
                 k = raw_text.find('{')
                 entry_number, k = extract_brace_group(raw_text, k)
@@ -115,7 +107,12 @@ def parse_writefile_line(line):
                     entry_title = entry_title[1:].lstrip()
                     if entry_title.endswith('}'):
                         entry_title = entry_title[:-1].rstrip()
-                print(entry_title)
+                print(entry_title)  
+
+            elif raw_text.startswith('\\numberline'):
+                k = raw_text.find('{')
+                entry_number, k = extract_brace_group(raw_text, k)
+                entry_title = raw_text[k:].lstrip()
 
             elif '\\hspace' in raw_text:
                 split_index = raw_text.find('\\hspace')
@@ -127,6 +124,7 @@ def parse_writefile_line(line):
                         entry_title = raw_text[hspace_brace_end+1:].strip()
 
             # Removes unnecessary mboxes
+            test_mbox = r'^\\mbox\s*\{(.*?)\}(.*?)$'
             if match := re.match(test_mbox, str(entry_number)):
                 entry_number = match.group(1) + match.group(2)
             

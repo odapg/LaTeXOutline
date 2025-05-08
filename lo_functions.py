@@ -293,13 +293,13 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
         pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*|[^\\].*'
         filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
         
-    part_list = [x for x in unfiltered_symlist if x[1].startswith("Part:")]
-    chapter_list = [x for x in unfiltered_symlist if x[1].startswith("Chapter:")]
+    part_pattern = re.compile(r"^Part")
+    chap_pattern = re.compile(r"^Chapter:")
     
     shift = 0
-    if len(part_list) > 0:
+    if any(part_pattern.search(b) for _, b in filtered_symlist):
         shift = 2
-    elif len(chapter_list) > 0:
+    elif any(chap_pattern.search(b) for _, b in filtered_symlist):
         shift = 1
 
     prefix = {
@@ -321,7 +321,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
     n=0
     for item in filtered_symlist:
         rgn = item[0]
-        sym = item[1]
+        sym = re.sub(r'\n', ' ', item[1])
 
         pattern = (
             r'^(Part\*?|Chapter\*?|Section\*?|Subsection\*?|'
@@ -334,6 +334,8 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
         else:
            type = "label"
            true_sym = sym
+        print(sym)
+        print(true_sym)
         
         ref = None
         if aux_data:
