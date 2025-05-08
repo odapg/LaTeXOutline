@@ -323,6 +323,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
         rgn = item[0]
         sym = re.sub(r'\n', ' ', item[1])
 
+        # Get the entry types and content
         pattern = (
             r'^(Part\*?|Chapter\*?|Section\*?|Subsection\*?|'
             r'Subsubsection\*?|Paragraph\*?|Frametitle): (.+)'
@@ -334,8 +335,8 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
         else:
            type = "label"
            true_sym = sym
-           filtered_symlist.remove(item)
         
+        # Find the reference
         ref = None
         if aux_data:
             ts = normalize(true_sym)
@@ -355,7 +356,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
                     ref = correct_item['reference']
                     break
 
-        # Labels
+        # Creates the content to be displayed
         if type == "label":
             if aux_data:
                 ref, name = next(((entry['reference'], entry['entry_type']) for entry in aux_data
@@ -367,7 +368,6 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
                 new_sym = prefix["label"] + true_sym + ' (ref ' + ref +') ' + prefix["copy"] 
             else:
                 new_sym = prefix["label"] + true_sym + prefix["copy"]
-        # Sections
         else:
             if '*' in type:
                 new_sym = prefix[type[:-1]] + '* ' + true_sym
@@ -375,7 +375,6 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
                 new_sym = prefix[type] + ref + ' ' + true_sym
             else:
                 new_sym = prefix[type] + true_sym
-
         new_sym += prefix["takealook"]
         
         sym_list.append(
@@ -383,8 +382,9 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
              "type": type,
              "content": sym,
              "fancy_content": new_sym}
-        )
-
+            )
+    print("---  filtered_symlist ---")
+    print(filtered_symlist)
     return sym_list
 
 # --------------------------
