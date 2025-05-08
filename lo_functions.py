@@ -311,7 +311,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
     "paragraph" : ' ' * (shift + 3) + lo_chars['paragraph'] + ' ',
     "frametitle" : lo_chars['frametitle'] + ' ',
     "label" : '  ' + lo_chars['label'],
-    "copy" : ' ' + lo_chars['copy'] + ' ',
+    "copy" : ' ' + lo_chars['copy'], # + ' ',
     "takealook" : ' ' + lo_chars['takealook'] + ' ',
     }
 
@@ -336,9 +336,9 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
            type = "label"
            true_sym = sym
         
-        # Find the reference
+        # Find the references of sections
         ref = None
-        if aux_data:
+        if type != "label" and aux_data:
             ts = normalize_for_comparison(true_sym)
             for i, data_item in enumerate(aux_data):
                 # Minimal check, this is not very precise, but should work
@@ -347,6 +347,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
                     correct_item = aux_data.pop(i)
                     filtered_symlist.remove(item)
                     ref = correct_item['reference']
+                    print(ref)
                     break
 
         # Creates the content to be displayed
@@ -356,11 +357,11 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
                                     if sym == entry['main_content']), ('',''))
             if ref and name == 'equation':
                 ref = '(' + ref + ')'
-                new_sym = prefix["label"] + true_sym + ' (eq. ' + ref +') ' + prefix["copy"] 
+                new_sym = prefix["label"] + ' Eq. ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
             elif ref:
-                new_sym = prefix["label"] + true_sym + ' (ref ' + ref +') ' + prefix["copy"] 
+                new_sym = prefix["label"] + ' Ref. ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
             else:
-                new_sym = prefix["label"] + true_sym + prefix["copy"]
+                new_sym = prefix["label"] + true_sym + prefix["copy"] + prefix["takealook"]
         else:
             simple_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', true_sym)
             simple_sym = re.sub(r'\\label\{[^\}]*\}\s+', '', simple_sym)
@@ -371,7 +372,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
                 new_sym = prefix[type] + ref + ' ' + simple_sym
             else:
                 new_sym = prefix[type] + simple_sym
-            new_sym += prefix["takealook"]
+        new_sym += prefix["takealook"]
         
         # Creates the entry of the generated symbol list
         sym_list.append(
@@ -384,14 +385,6 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
     
     # Last chance
     refless_items = [sym for sym in sym_list if sym["type"] != "label" and ref is None]
-
-    # if len(filtered_symlist)>0:
-    #     for sym in refless_items:
-    #         if sym["type"] == filtered_symlist[0]
-    #         pass
-    # To remove
-    print("---  filtered_symlist ---")
-    print(filtered_symlist)
 
     return sym_list
 

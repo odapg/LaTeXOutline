@@ -46,16 +46,14 @@ contexts:
       captures:
         1: bullet.frametitle.latexoutline
         2: frametitle.latexoutline
-    - match: ({{label_char}})([^\n{{copy_char}}{{takealook_char}}]+)
+    - match: ({{label_char}})([^\n{{copy_char}}{{takealook_char}}]+)({{copy_char}}\s)({{takealook_char}}\s)(.+)
       captures:
         1: bullet.label.latexoutline
         2: label.latexoutline
-    - match: ({{copy_char}}\s)
-      captures:
-        1: copy.latexoutline
-    - match: ({{takealook_char}}\s)
-      captures:
-        1: takealook.latexoutline
+        3: copy.latexoutline
+        4: takealook.latexoutline
+        5: label.latexoutline
+
 
 
 

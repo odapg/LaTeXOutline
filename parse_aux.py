@@ -97,7 +97,7 @@ def parse_writefile_line(line):
             entry_title = raw_text.strip()
 
             # Case {\section{}{...}}
-            test_toc = r'^\\toc[a-z]+\s\{[0-9]*\}'
+            test_toc = r'^\\toc[a-z]+\s\{[a-zA-Z0-9]*\}'
             if re.match(test_toc, raw_text):
                 raw_text = re.sub(test_toc, '', raw_text, count=1)
                 k = raw_text.find('{')
