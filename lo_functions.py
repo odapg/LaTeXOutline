@@ -285,6 +285,8 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
     Filters the symlist to only show sections and labels
     Prepares their presentation in the LO view, put it in the 'symlist' setting
     '''
+    lo_settings = sublime.load_settings('latexoutline.sublime-settings')
+    show_sections = lo_settings.get('show_section_numbers')
 
     if outline_type == "toc":
         pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*'
@@ -338,7 +340,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
         
         # Find the references of sections
         ref = None
-        if type != "label" and aux_data:
+        if show_sections and type != "label" and aux_data:
             ts = normalize_for_comparison(true_sym)
             for i, data_item in enumerate(aux_data):
                 # Minimal check, this is not very precise, but should work
@@ -355,10 +357,10 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
             if aux_data:
                 ref, name = next(((entry['reference'], entry['entry_type']) for entry in aux_data
                                     if sym == entry['main_content']), ('',''))
-            if ref and name == 'equation':
+            if show_sections and ref and name == 'equation':
                 ref = '(' + ref + ')'
                 new_sym = prefix["label"] + ' Eq. ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
-            elif ref:
+            elif show_sections and ref:
                 new_sym = prefix["label"] + ' Ref. ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
             else:
                 new_sym = prefix["label"] + true_sym + prefix["copy"] + prefix["takealook"]
