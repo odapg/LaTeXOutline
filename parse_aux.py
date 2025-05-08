@@ -123,7 +123,7 @@ def parse_writefile_line(line):
                     if hspace_brace_end != -1:
                         entry_title = raw_text[hspace_brace_end+1:].strip()
 
-            # Removes unnecessary mboxes
+            # Removes unnecessary mboxes in section numbers
             test_mbox = r'^\\mbox\s*\{(.*?)\}(.*?)$'
             if match := re.match(test_mbox, str(entry_number)):
                 entry_number = match.group(1) + match.group(2)
@@ -132,7 +132,7 @@ def parse_writefile_line(line):
                 full_group, _ = extract_brace_group(entry_title, 0)
                 entry_title = full_group[len('\\ignorespaces'):].strip()
 
-            entry_title = re.sub(r'\\([a-zA-Z0-9]+)\s+{', r'\\\1{', entry_title)
+            entry_title = re.sub(r'\\([a-zA-Z0-9]+)\s+\{', r'\\\1{', entry_title)
 
 
             return {

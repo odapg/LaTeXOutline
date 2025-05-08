@@ -339,18 +339,11 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
         # Find the reference
         ref = None
         if aux_data:
-            ts = normalize(true_sym)
+            ts = normalize_for_comparison(true_sym)
             for i, data_item in enumerate(aux_data):
-                if ts == data_item['main_content']:
-                    correct_item = aux_data.pop(i)
-                    filtered_symlist.remove(item)
-                    ref = correct_item['reference']
-                    break
-                # This is less precise and can lead to errors
-                elif ( 
-                    normalize(re.sub(r'\$.*?\$', '', true_sym))
-                        == normalize(re.sub(r'\$.*?\$', '', data_item['main_content']))
-                    and type == data_item['entry_type']):
+                # Minimal check, this is not very precise, but should work
+                # in most cases
+                if ts == normalize_for_comparison(data_item['main_content']):
                     correct_item = aux_data.pop(i)
                     filtered_symlist.remove(item)
                     ref = correct_item['reference']
@@ -369,13 +362,16 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
             else:
                 new_sym = prefix["label"] + true_sym + prefix["copy"]
         else:
+            simple_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', true_sym)
+            simple_sym = re.sub(r'\\label\{[^\}]*\}\s+', '', simple_sym)
+            simple_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', simple_sym)
             if '*' in type:
-                new_sym = prefix[type[:-1]] + '* ' + true_sym
+                new_sym = prefix[type[:-1]] + '* ' + simple_sym
             elif ref:
-                new_sym = prefix[type] + ref + ' ' + true_sym
+                new_sym = prefix[type] + ref + ' ' + simple_sym
             else:
-                new_sym = prefix[type] + true_sym
-        new_sym += prefix["takealook"]
+                new_sym = prefix[type] + simple_sym
+            new_sym += prefix["takealook"]
         
         # Creates the entry of the generated symbol list
         sym_list.append(
@@ -389,9 +385,10 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
     # Last chance
     refless_items = [sym for sym in sym_list if sym["type"] != "label" and ref is None]
 
-    if len(filtered_symlist)>0:
-        for sym in refless_items:
-            pass
+    # if len(filtered_symlist)>0:
+    #     for sym in refless_items:
+    #         if sym["type"] == filtered_symlist[0]
+    #         pass
     # To remove
     print("---  filtered_symlist ---")
     print(filtered_symlist)
@@ -475,9 +472,11 @@ def refresh_regions(lo_view, active_view, outline_type):
 
 # --------------------------
 
-def normalize(s):
+def normalize_for_comparison(s):
+    s = re.sub(r'\$[^\$]*?\$', '', s)
     s = re.sub(r'\\nonbreakingspace\s+', '~', s)
-    # s = re.sub(r'\s+\}', '}', s)
+    s = re.sub(r'\\label\{[^\}]*\}\s+', '', s)
+    s = re.sub(r'\\[a-z]+', '', s)
     s = re.sub(r'\s+', ' ', s)
     s = s.strip()
     return unicodedata.normalize("NFC", s)
