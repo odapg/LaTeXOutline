@@ -320,7 +320,7 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
     aux_data = get_aux_file_data(path)
     
     sym_list = []
-    n=0
+
     for item in filtered_symlist[:]:
         rgn = item[0]
         sym = re.sub(r'\n', ' ', item[1])
