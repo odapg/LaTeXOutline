@@ -3,16 +3,20 @@
   // false: no syncing
   "outline_sync": true,
 
+  // true: show the section numbers (can sometimes be inaccurate)
+  // false: only present section with bullets
+  "show_section_numbers": true,
+
   // true: latexoutline will use the same color scheme as current file
-  // false: latexoutline will use the color scheme defined below
+  // false: latexoutline will use the color scheme defined below (default)
   "outline_inherit_color_scheme": false,
 
   // [LaTeXOutline-dark, LaTeXOutline-light or LaTeXOutline-custom].hidden-color-scheme
   // are included with the package
-  "outline_color_scheme": "LaTeXOutline-custom.hidden-color-scheme",
+  "outline_color_scheme": "LaTeXOutline-dark.hidden-color-scheme",
   
   // Width proportion for the outline sidebar: keep between 0.1 and 0.9
-  "outline_width": 0.2,
+  "outline_width": 0.22,
 
   // To customize
   "font_face": "",

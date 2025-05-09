@@ -11,41 +11,47 @@
     "rules":
     [   {
             "name": "Part",
-            "scope": "part.latexoutline",
+            "scope": "part.latexoutline, bullet.part.latexoutline",
             "foreground": "hsl(0, 0%, 97%)",
             "font_style": "bold, glow",
         },
         {
             "name": "Chapter",
-            "scope": "chapter.latexoutline",
+            "scope": "chapter.latexoutline, bullet.chapter.latexoutline",
             "foreground": "hsl(14, 100%, 88%)",
             "font_style": "bold",
         },
         {
             "name": "Section",
-            "scope": "section.latexoutline",
+            "scope": "section.latexoutline, bullet.section.latexoutline",
             "foreground": "hsl(208, 100%, 82%)",
             "font_style": "bold",
         },
         {
             "name": "Subsection",
-            "scope": "subsection.latexoutline",
+            "scope": "subsection.latexoutline, bullet.subsection.latexoutline",
             "foreground": "hsl(114, 48%, 76%)",
         },
         {
             "name": "Subsubsection",
-            "scope": "subsubsection.latexoutline",
+            "scope": "subsubsection.latexoutline, bullet.subsubsection.latexoutline",
             "foreground": "hsl(300, 38%, 73%)",
         },
         {
             "name": "Paragraph",
-            "scope": "paragraph.latexoutline",
+            "scope": "paragraph.latexoutline, bullet.paragraph.latexoutline",
             "foreground": "hsl(210, 13%, 45%)",
         },
         {
             "name": "Frametitle",
-            "scope": "frametitle.latexoutline",
+            "scope": "frametitle.latexoutline, bullet.frametitle.latexoutline",
             "foreground": "hsl(180, 36%, 54%)",
+        },
+        {
+            "name": "Label",
+            "scope": "label.latexoutline, bullet.label.latexoutline",
+            "foreground": "rgb(133, 129, 66)",
+            "font_style": "italic",
         },
     ]
 }

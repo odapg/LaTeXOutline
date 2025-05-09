@@ -1,23 +1,64 @@
 [
   {
-    "caption": "LaTeX Outline (Right)",
+    "caption": "LaTeXOutline: ToC on the Right",
     "command": "latex_outline",
     "args": {
-      "side": "right"
+      "side": "right",
+      "outline_type": "toc",
+      "close_on_repeated_use": false
     }
   },
   {
-    "caption": "LaTeX Outline (Left)",
+    "caption": "LaTeXOutline: toC on the Left",
     "command": "latex_outline",
     "args": {
-      "side": "left"
+      "side": "left",
+      "outline_type": "toc",
+      "close_on_repeated_use": false
+    }
+  },
+    {
+    "caption": "LaTeXOutline: ToC and labels on the Right",
+    "command": "latex_outline",
+    "args": {
+      "side": "right",
+      "outline_type": "full",
+      "close_on_repeated_use": false
     }
   },
   {
-    "caption": "LaTeX Outline: Close sidebar",
+    "caption": "LaTeXOutline: toC and labels on the Left",
+    "command": "latex_outline",
+    "args": {
+      "side": "left",
+      "outline_type": "full",
+      "close_on_repeated_use": false
+    }
+  },
+  {
+    "caption": "LaTeXOutline: Close sidebar",
     "command": "latex_outline_close_sidebar",
+    "args": {}
+  },
+  {
+    "caption": "LaTeXOutline: Freshen sidebar",
+    "command": "latex_outline_refresh",
+    "args": {}
+  },
+  {
+    "caption": "LaTeXOutline: Settings",
+    "command": "edit_settings",
     "args": {
-      
-    }
-  }
+        "base_file": "${packages}/LaTeXOutline/latexoutline.sublime-settings",
+        "default": "{\n\t$0\n}\n"
+    },
+  },
+  {
+  "caption": "LaTeXOutline: Keybindings",
+  "command": "edit_settings",
+  "args": {
+      "base_file": "${packages}/LaTeXOutline/Default.sublime-keymap",
+      "default": "{\n\t$0\n}\n"
+    },
+  },
 ]

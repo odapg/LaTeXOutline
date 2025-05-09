@@ -7,65 +7,128 @@ from sublime import Region, set_timeout_async
 from sublime_plugin import WindowCommand, TextCommand, EventListener
 from .lo_functions import * 
 import re
+import os
 
-# --------------------------------------------------------------------------------------#
-#                                                                                       #
-#                                     MAIN COMMANDS                                     #
-#                                                                                       #
-# --------------------------------------------------------------------------------------#
+# ----------------------------------------------------------------------------#
+#                                                                             #
+#                                MAIN COMMANDS                                #
+#                                                                             #
+# ----------------------------------------------------------------------------#
+
+# ----------------------------------------------------
+# Main command: toggle the layout
 
 class LatexOutlineCommand(WindowCommand):
-    def run(self, side="right"):
-        show(self.window, side=side)
+
+    def is_visible(self):
+        view = self.window.active_view()
+        return view and view.match_selector(0, "text.tex.latex")
+
+    def run(self, side="right", outline_type="toc", close_on_repeated_use=True):
+
+        # If the outline view already exists:
+        # close the panel and possibly replace it
+        if get_sidebar_status(self.window):
+            lo_view, lo_group = get_sidebar_view_and_group(self.window)
+
+            current_side = lo_view.settings().get('side')
+            current_type = lo_view.settings().get('current_outline_type')
+
+            if current_side == side and current_type == outline_type and not close_on_repeated_use:
+                return
+                
+            self.window.run_command('latex_outline_close_sidebar')
+
+            if side != current_side:
+                if outline_type == "both":
+                    show_outline(self.window, side=side, outline_type=current_type)
+                else:
+                    show_outline(self.window, side=side, outline_type=outline_type)
+            elif outline_type != current_type and outline_type != "both":
+                show_outline(self.window, side=side, outline_type=outline_type)
+            elif outline_type == "both" and current_type == "toc":
+                    show_outline(self.window, side=side, outline_type="full")
+            elif outline_type == "both" and current_type == "full" and not close_on_repeated_use:
+                    show_outline(self.window, side=side, outline_type="toc")
+            else:
+                lo_view.settings().set('current_outline_type', '') 
+
+        # Open it otherwise
+        else:
+            if outline_type == "full":
+                show_outline(self.window, side=side, outline_type="full")
+            else:
+                show_outline(self.window, side=side, outline_type="toc")
+
 
 # ----------------------------------------------------
+# Close the outline view and adjust the layout
 
 class LatexOutlineCloseSidebarCommand(WindowCommand):
+
+    def is_visible(self):
+        return get_sidebar_status(self.window)
+
     def run(self):
         active_view = self.window.active_view()
-        sym_view, sym_group = get_sidebar_view_and_group(self.window)
-        if sym_view:
-            sym_side = sym_view.settings().get('side')
-            current_layout = self.window.layout()
-            rows = current_layout["rows"]
-            cols = current_layout["cols"]
-            cells = current_layout["cells"]
-            x_min, y_min, x_max, y_max = cells[sym_group]
-            width = cols[x_min +1] - cols[x_min]
-            new_cells = [c for c in cells if c[2] <= x_min ] \
-                    + [ [c[0]-1, c[1], c[2]-1, c[3]] for c in cells if c[0] >= x_max] 
-            
-            if sym_side == "right":
-                new_cols = [c / (1-width) for c in cols if c < 1 - width ] \
-                        + [c for c in cols if c > 1 - width ]
-            elif sym_side == "left":
-                new_cols = [c for c in cols if c < width ] \
-                        + [(c - width) / (1-width) for c in cols if c >  width ]
-            else:
-                return
+        lo_view, lo_group = get_sidebar_view_and_group(self.window)
 
-            self.window.focus_view(sym_view)
+        if lo_view:
+            lo_side = lo_view.settings().get('side')
+            lo_new_layout = reduce_layout(self.window, lo_view, lo_group, lo_side)
+            self.window.focus_view(lo_view)
             self.window.run_command('close_file')
-
-            self.window.set_layout({"cols": new_cols, "rows": rows, "cells": new_cells})
+            self.window.set_layout(lo_new_layout)
             self.window.focus_view(active_view)
 
-# ----------------------------------------------------
 
-class LatexOutlineRefreshCommand(TextCommand):
-    def run(self, edit, symlist=None, symkeys=None, path=None, active_view=None):
+# ----------------------------------------------------
+# Command to refresh the contents of the outline view
+
+class LatexOutlineRefreshCommand(WindowCommand):
+
+    def is_visible(self):
+        return get_sidebar_status(self.window)
+
+    def run(self):
+        lo_view, lo_group = get_sidebar_view_and_group(self.window)
+        if lo_view:
+            outline_type = lo_view.settings().get('current_outline_type')
+            active_view_id = lo_view.settings().get('active_view')
+            possible_views = [v for v in self.window.views() if v.id() == active_view_id]
+            active_view = None if not possible_views else possible_views[0]
+            path = lo_view.settings().get('current_file')
+        if outline_type and active_view and path:
+            refresh_lo_view(lo_view, path, active_view, outline_type)
+
+
+# ----------------------------------------------------
+# Fills the contents of the outline view (not to be used directly)
+
+class LatexOutlineFillSidebarCommand(TextCommand):
+
+    def run(self, edit, symlist=None, path=None, active_view=None):
+        
         self.view.erase(edit, Region(0, self.view.size()))
-        self.view.insert(edit, 0, "\n".join(symlist))
+        symlist_contents = [item["fancy_content"] for item in symlist]
+        self.view.insert(edit, 0, "\n".join(symlist_contents))
+       
         self.view.settings().set('symlist', symlist)
-        self.view.settings().set('symkeys', symkeys)
         if active_view:
             self.view.settings().set('active_view', active_view)
         self.view.settings().set('current_file', path)
         self.view.sel().clear()
-
-# ----------------------------------------------------
+       
+       
+# ----------------------------------------------------#
+#                   Sync event handler                #
+# ----------------------------------------------------#
 
 class LatexOutlineSyncEventHandler(EventListener):
+
+# ------- 
+# Synchronizes the highlight in the outline 
+# depending on the cursor's place in the LaTeX file
 
     def on_selection_modified(self, view):
         if view.sheet().is_transient():
@@ -76,59 +139,75 @@ class LatexOutlineSyncEventHandler(EventListener):
             return
         if 'LaTeX.sublime-syntax' not in view.window().active_view().settings().get('syntax'):
             return
+        # Debouncer
         if view.settings().get('sync_in_progress'):
             return
         if not get_sidebar_status(view.window()):
             return
-        
-        view.settings().set('sync_in_progress', True)
-        sublime.set_timeout_async(delayed_sync_symview,1000)
 
-# ----------------------------------------------------
+        view.settings().set('sync_in_progress', True)
+        sublime.set_timeout_async(sync_lo_view, 1000)
+
+
+# ----------------------------------------------------#
+#                   Main event handler                #
+# ----------------------------------------------------#
 
 class LatexOutlineEventHandler(EventListener):
 
+# ------- 
+# Reset the outline when the user focuses on another LaTeX document
+
     def on_activated(self, view):
+        if not view.match_selector(0, "text.tex.latex"):
+            return 
         if not get_sidebar_status(view.window()):
             return
-        if 'LaTeX.sublime-syntax' not in view.window().active_view().settings().get('syntax'):
-            return
-        # Avoid error message when console opens, as console has group index -1
-        if view.window().get_view_index(view)[0] == -1:
-            return
 
-        sym_view, sym_group = get_sidebar_view_and_group(view.window())
+        lo_view, lo_group = get_sidebar_view_and_group(view.window())
 
-        if sym_view != None:
-            if sym_view.settings().get('current_file') == view.file_name() and view.file_name() != None:
+        if lo_view is not None:
+            if (view.file_name() is not None and 
+                    lo_view.settings().get('current_file') == view.file_name()):
                 return
             else:
-                sym_view.settings().set('current_file', view.file_name())
-            
-        refresh_sym_view(sym_view, view.file_name(), view)
+                lo_view.settings().set('current_file', view.file_name())
+                outline_type = lo_view.settings().get('current_outline_type')
+                refresh_lo_view(lo_view, view.file_name(), view, outline_type)
 
-# --------------
+# ------- 
+# Reset the outline when the LaTeX file is saved
 
     def on_pre_save(self, view):
         if not get_sidebar_status(view.window()):
             return
-        if 'LaTeX.sublime-syntax' not in view.window().active_view().settings().get('syntax'):
-            return
+        if not view.match_selector(0, "text.tex.latex"):
+            return 
         if view.file_name() == None:
             return
 
-        sym_view, sym_group = get_sidebar_view_and_group(view.window())
 
-        if sym_view != None:
-            # Note here is the only place that differs from on_activate_view
-            if sym_view.settings().get('current_file') != view.file_name():
-                sym_view.settings().set('current_file', view.file_name())
+        lo_view, lo_group = get_sidebar_view_and_group(view.window())
 
-        refresh_sym_view(sym_view, view.file_name(), view)
-        symlist = sym_view.settings().get('symlist')
-        delayed_sync_symview()
+        if lo_view != None:
+            if lo_view.settings().get('current_file') != view.file_name():
+                lo_view.settings().set('current_file', view.file_name())
 
-# --------------
+        # -- Refreshes the data gathered from the .aux file
+        path = view.file_name()
+        aux_data = get_aux_file_data(path)
+        lo_view.settings().set('aux_data', aux_data)
+        # --------
+
+        outline_type = lo_view.settings().get('current_outline_type')
+        refresh_lo_view(lo_view, view.file_name(), view, outline_type)
+        # symlist = lo_view.settings().get('symlist')
+        sync_lo_view()
+
+# ------- 
+# When the user clicks the outline,
+# go to the corresponding place in the LaTeX file
+# or copy the label when asked
 
     def on_selection_modified(self, view):
         if 'latexoutline' not in view.settings().get('syntax'):
@@ -136,10 +215,104 @@ class LatexOutlineEventHandler(EventListener):
         if view.window().get_view_index(view)[0] == -1:
             return
 
-        if found_selection := find_selected_section():
-            active_view, region_position, label_copy = found_selection
-            if label_copy:
+        window = sublime.active_window()
+        lo_view = view
+
+        # Get the LaTeX view from the settings
+        active_view_id = lo_view.settings().get('active_view')
+        possible_views = [v for v in window.views() if v.id() == active_view_id]
+        active_view = None if not possible_views else possible_views[0]
+
+        if active_view is not None:
+            # Position and nature of the selected item in the outline
+            if len(lo_view.sel()) == 0:
+                return None
+            lo_view_sel = lo_view.sel()[0]
+            (row, col) = lo_view.rowcol(lo_view.sel()[0].begin())
+            sel_scope = lo_view.scope_name(lo_view.sel()[0].begin())
+            
+            # If the copy symbol ❐ was pressed
+            if 'copy' in sel_scope:
+                symlist = lo_view.settings().get('symlist')
+                label = symlist[row]["content"]
+                sublime.set_clipboard(label)
+                sublime.active_window().status_message(
+                f" ✓ Copied reference '{label}' to the clipboard")
+                lo_view.sel().clear()
+                sublime.active_window().focus_view(active_view)
+                return
+
+            # If the takealook symbol ◎ was pressed
+            if 'takealook' in sel_scope:
+                symlist = lo_view.settings().get('symlist')
+                region = symlist[row]["region"]
+                active_view.add_regions(
+                    "takealook", 
+                    active_view.lines(Region(region[0],region[1])),
+                    icon='Packages/LaTeXOutline/images/chevron.png',
+                    scope='region.bluish',
+                    flags=1024,
+                )
+                active_view.show_at_center(region[0])
+                sublime.active_window().focus_view(active_view)
+                sublime.set_timeout_async(lambda: active_view.erase_regions("takealook"), 5000)
+                return
+            
+
+            # otherwise, go to the corresponding region or copy the section label
+            # if the bullet is pressed
+
+            # Refresh the regions (only) in the symlist
+            outline_type = lo_view.settings().get('current_outline_type')
+            refresh_regions(lo_view, active_view, outline_type)
+            symlist = lo_view.settings().get('symlist')
+
+            # Get the region corresponding to the selected item
+            if not symlist or row is None:
+                return None
+            region_position = symlist[row]["region"]
+            
+            label_copy = False
+            if 'bullet' in sel_scope:
                 copy_label(active_view, region_position)
             else:
                 goto_region(active_view, region_position)
+                # sync_lo_view()              
+
+# ------- 
+# Arranges the layout when one closes the outline manually
+
+    def on_pre_close(self, view):
+        if 'latexoutline' not in view.settings().get('syntax'):
+            return
+        window = view.window()
+        lo_view, lo_group = get_sidebar_view_and_group(window)
+        
+        if lo_view:
+            lo_side = lo_view.settings().get('side')
+            lo_new_layout = reduce_layout(window, lo_view, lo_group, lo_side)
+            window.settings().set('lo_new_layout', lo_new_layout)
+
+    def on_close(self, view):
+        window = sublime.active_window()
+        if not window.settings().get('lo_new_layout'):
+            return
+        window.set_layout(window.settings().get('lo_new_layout'))
+        window.settings().erase('lo_new_layout')
+
+# -------------- 
+# Future: refresh the view after .tex has been built
+
+    def on_post_window_command(self, window, command_name, args):
+        if not get_sidebar_status(window):
+            return
+        if not window.active_view() or not window.active_view().match_selector(0, "text.tex.latex"):
+            return
+        if command_name != "show_panel":
+            return
+        if not args["panel"] or args["panel"] != "output.latextools":
+            return
+        lo_view, lo_group = get_sidebar_view_and_group(window)
+        outline_type = lo_view.settings().get('current_outline_type')
+        refresh_lo_view(lo_view, window.active_view().file_name(), window.active_view(), outline_type)
 

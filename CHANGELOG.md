@@ -1,5 +1,15 @@
 ## LaTeXOutline for Sublime Text -- Changelog
 
+#### Version 2.1
+
+- Adds a second outline containing the labels in addition to the table of contents.
+- Adds two buttons (`❐` and `⌖`) to copy the label to the clipboard and to take a look to a part of the file without moving the caret.
+- Adds section numbers and label references by parsing the .aux file (experimental).
+- Now also considers \section*{...} etc.
+- Corrects a bug occurring when two sections have the same name.
+- Small corrections.
+
+
 #### Version 2.0
 
 - Adds the detection of `part`, `chapter`, `paragraph` and `frametitle` sectioning commands.

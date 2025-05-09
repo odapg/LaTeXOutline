@@ -3,6 +3,7 @@
 name: LaTeXOutline
 file_extensions: latexoutline
 scope: text.latexoutline
+hidden:  true
 variables:
   part_char: '■'
   chap_char: '𑗕'
@@ -11,34 +12,48 @@ variables:
   sssec_char: '‣'
   par_char: '⸱'
   ftitle_char: '▫'
+  label_char: '›'
+  copy_char: '❐'
+  takealook_char: '⌖'
 
 contexts:
   main:
-    - match: ({{part_char}}\s)([^\n]+)
+    - match: ({{part_char}}\s)([^\n{{takealook_char}}]+)
       captures:
         1: bullet.part.latexoutline
         2: part.latexoutline
-    - match: ({{chap_char}}\s)([^\n]+)
+    - match: ({{chap_char}}\s)([^\n{{takealook_char}}]+)
       captures:
         1: bullet.chapter.latexoutline
         2: chapter.latexoutline
-    - match: ({{sec_char}}\s)([^\n]+)
+    - match: ({{sec_char}}\s)([^\n{{takealook_char}}]+)
       captures:
         1: bullet.section.latexoutline
         2: section.latexoutline
-    - match: (\s{{ssec_char}}\s)([^\n]+)
+    - match: (\s{{ssec_char}}\s)([^\n{{takealook_char}}]+)
       captures:
         1: bullet.subsection.latexoutline
         2: subsection.latexoutline
-    - match: (\s{{sssec_char}}\s)([^\n]+)
+    - match: (\s{{sssec_char}}\s)([^\n{{takealook_char}}]+)
       captures:
         1: bullet.subsubsection.latexoutline
         2: subsubsection.latexoutline
-    - match: (\s{{par_char}}\s)([^\n]+)
+    - match: (\s{{par_char}}\s)([^\n{{takealook_char}}]+)
       captures:
         1: bullet.paragraph.latexoutline
         2: paragraph.latexoutline
-    - match: ({{ftitle_char}}\s)([^\n]+)
+    - match: ({{ftitle_char}}\s)([^\n{{takealook_char}}]+)
       captures:
         1: bullet.frametitle.latexoutline
         2: frametitle.latexoutline
+    - match: ({{label_char}})([^\n{{copy_char}}{{takealook_char}}]+)({{copy_char}}\s)({{takealook_char}}\s)(.*)
+      captures:
+        1: bullet.label.latexoutline
+        2: label.latexoutline
+        3: copy.latexoutline
+        4: takealook.latexoutline
+        5: label.latexoutline
+
+
+
+
