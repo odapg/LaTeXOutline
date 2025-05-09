@@ -8,6 +8,7 @@ import re
 import unicodedata
 from sublime import Region
 from .parse_aux import parse_aux_file
+from .detect_environment import _find_env_regions
 
 
 # -------------------------- Characters --------------------------
@@ -64,7 +65,7 @@ def refresh_lo_view(lo_view, path, view, outline_type):
 
     # Get the section list
     unfiltered_st_symlist = get_st_symbols(view, outline_type)
-    sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type, path)
+    sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type, path, view)
     active_view_id = view.id()
 
     if lo_view is not None:
@@ -280,7 +281,7 @@ def get_sidebar_status(window):
 
 # --------------------------
 
-def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
+def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path, view):
     '''
     Filters the symlist to only show sections and labels
     Prepares their presentation in the LO view, put it in the 'symlist' setting
@@ -320,6 +321,10 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
     aux_data = get_aux_file_data(path)
     
     sym_list = []
+    begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
+    end_re = r"\\end\{([^\}]*)\}"
+    begins = view.find_all(begin_re, sublime.IGNORECASE)
+    ends = view.find_all(end_re, sublime.IGNORECASE)
 
     for item in filtered_symlist[:]:
         rgn = item[0]
@@ -358,9 +363,13 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
                                     if sym == entry['main_content']), ('',''))
             if show_sections and ref and name == 'equation':
                 ref = '(' + ref + ')'
-                new_sym = prefix["label"] + ' Eq. ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
+                new_sym = prefix["label"] + 'Eq. ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
             elif show_sections and ref:
-                new_sym = prefix["label"] + ' Ref. ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
+                env_regions = _find_env_regions(view, rgn.a, begins, ends)
+                env_type = view.substr(env_regions[0])
+                if env_type == "document":
+                    env_type = "↪ Ref." 
+                new_sym = prefix["label"] +env_type + ' ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
             else:
                 new_sym = prefix["label"] + true_sym + prefix["copy"] + prefix["takealook"]
         else:
