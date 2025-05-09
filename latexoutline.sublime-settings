@@ -13,7 +13,7 @@
 
   // [LaTeXOutline-dark, LaTeXOutline-light or LaTeXOutline-custom].hidden-color-scheme
   // are included with the package
-  "outline_color_scheme": "LaTeXOutline-custom.hidden-color-scheme",
+  "outline_color_scheme": "LaTeXOutline-dark.hidden-color-scheme",
   
   // Width proportion for the outline sidebar: keep between 0.1 and 0.9
   "outline_width": 0.22,

@@ -249,7 +249,7 @@ class LatexOutlineEventHandler(EventListener):
                 active_view.add_regions(
                     "takealook", 
                     active_view.lines(Region(region[0],region[1])),
-                    icon='Packages/LaTeXOutline/chevron.png',
+                    icon='Packages/LaTeXOutline/images/chevron.png',
                     scope='region.bluish',
                     flags=1024,
                 )
@@ -277,7 +277,7 @@ class LatexOutlineEventHandler(EventListener):
                 copy_label(active_view, region_position)
             else:
                 goto_region(active_view, region_position)
-                sync_lo_view()              
+                # sync_lo_view()              
 
 # ------- 
 # Arranges the layout when one closes the outline manually

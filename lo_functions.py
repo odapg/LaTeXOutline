@@ -349,7 +349,6 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
                     correct_item = aux_data.pop(i)
                     filtered_symlist.remove(item)
                     ref = correct_item['reference']
-                    print(ref)
                     break
 
         # Creates the content to be displayed
@@ -366,15 +365,20 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
                 new_sym = prefix["label"] + true_sym + prefix["copy"] + prefix["takealook"]
         else:
             simple_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', true_sym)
-            simple_sym = re.sub(r'\\label\{[^\}]*\}\s+', '', simple_sym)
+            simple_sym = re.sub(r'\\label\{[^\}]*\}\s*', '', simple_sym)
             simple_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', simple_sym)
+            simple_sym = re.sub(r'\s*~\s*', r' ', simple_sym)
             if '*' in type:
                 new_sym = prefix[type[:-1]] + '* ' + simple_sym + prefix["takealook"]
             elif ref:
                 new_sym = prefix[type] + ref + ' ' + simple_sym + prefix["takealook"]
             else:
                 new_sym = prefix[type] + simple_sym + prefix["takealook"]
-        
+
+            new_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', new_sym)
+            new_sym = re.sub(r'\\label\{[^\}]*\}\s*', '', new_sym)
+            new_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', new_sym)
+            new_sym = re.sub(r'\s*~\s*', r' ', new_sym)
         # Creates the entry of the generated symbol list
         sym_list.append(
             {"region": (rgn.a, rgn.b),
@@ -469,7 +473,7 @@ def refresh_regions(lo_view, active_view, outline_type):
 def normalize_for_comparison(s):
     s = re.sub(r'\$[^\$]*?\$', '', s)
     s = re.sub(r'\\nonbreakingspace\s+', '~', s)
-    s = re.sub(r'\\label\{[^\}]*\}\s+', '', s)
+    s = re.sub(r'\\label\{[^\}]*\}\s*', '', s)
     s = re.sub(r'\\[a-z]+', '', s)
     s = re.sub(r'\s+', ' ', s)
     s = s.strip()

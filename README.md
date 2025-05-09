@@ -39,7 +39,7 @@ It only works with *single-file* LaTeX documents.
 
 - LaTeXOutline does not work with multiple-files LaTeX projects. The commands `\input{other.tex}` are not taken into account.
 - Section numbering does not work with the use of the `cleveref` package or the `\texorpdfstring` command in a section. It is likely that many packages interfering with the `.aux` file can create issues as well.
-- Spaces in labels are not recognized in symbols by ST and therefore not by LaTeXOutline either.
+- Spaces or parentheses in labels are not recognized in ST's symbols list and therefore not by LaTeXOutline either.
 
 ### License
 
