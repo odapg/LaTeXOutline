@@ -7,7 +7,7 @@ import sublime
 import sublime_plugin
 import re
 
-def _find_env_regions(view, pos, begins, ends):
+def _find_env_regions(view, pos, begins, ends, secs):
     """returns the regions corresponding to nearest matching environments"""
     begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
     end_re = r"\\end\{([^\}]*)\}"
@@ -43,15 +43,21 @@ def _find_env_regions(view, pos, begins, ends):
         _partition(begins, lambda b: b.begin() <= pos)
     end_before, end_after =\
         _partition(ends, lambda e: e.end() < pos)
+    sec_before, sec_after =\
+        _partition(secs, lambda e: e.begin() < pos)
 
     # get the nearest open environments
     try:
         begin = _get_closest_begin(begin_before, end_before)
         end = _get_closest_end(end_after, begin_after)
+        sec = _get_closest_section(sec_before)
     except NoEnvError as e:
         sublime.status_message(e.args[0])
         return []
     
+    if sec.begin() > begin.begin():
+        return []
+
     # extract the regions for the environments
     begin_region = extract_begin_region(begin)
     end_region = extract_end_region(end)
@@ -93,6 +99,15 @@ def _partition(env_list, is_before):
 class NoEnvError(Exception):
     pass
 
+
+def _get_closest_section(sec_before):
+    """returns the closest \\section before"""
+    sec_iter = reversed(sec_before)
+    try:
+        b = next(sec_iter)
+    except:
+        raise NoEnvError("No section detected")
+    return b
 
 def _get_closest_begin(begin_before, end_before):
     """returns the closest \\begin, that is open"""

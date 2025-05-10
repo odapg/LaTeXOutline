@@ -322,10 +322,17 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path, view):
     aux_data = get_aux_file_data(path)
     
     sym_list = []
+
+    # Gets the \begins and \ends once for all to be used with _find_env_regions
     begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
     end_re = r"\\end\{([^\}]*)\}"
+    sec_re = (
+            r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
+            r'subsubsection\*?|paragraph\*?|frametitle)'
+        )
     begins = view.find_all(begin_re, sublime.IGNORECASE)
     ends = view.find_all(end_re, sublime.IGNORECASE)
+    secs = view.find_all(sec_re, sublime.IGNORECASE)
 
     for item in filtered_symlist[:]:
         rgn = item[0]
@@ -366,12 +373,13 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path, view):
                 ref = '(' + ref + ')'
                 new_sym = prefix["label"] + 'Eq. ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
             elif show_ref_nb and ref:
+                # Looks for the type of environment corresponding to the label
                 if show_env_names:
-                    env_regions = _find_env_regions(view, rgn.a, begins, ends)
-                    env_type = view.substr(env_regions[0])
-                    if env_type == "document":
+                    env_regions = _find_env_regions(view, rgn.a, begins, ends, secs)
+                    if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
                         env_type = "↪ Ref."
                     else:
+                        env_type = view.substr(env_regions[0])
                         env_type = env_type.title()
                 else:
                     env_type = "Ref."
