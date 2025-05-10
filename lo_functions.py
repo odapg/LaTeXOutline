@@ -324,15 +324,16 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path, view):
     sym_list = []
 
     # Gets the \begins and \ends once for all to be used with _find_env_regions
-    begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
-    end_re = r"\\end\{([^\}]*)\}"
-    sec_re = (
-            r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
-            r'subsubsection\*?|paragraph\*?|frametitle)'
-        )
-    begins = view.find_all(begin_re, sublime.IGNORECASE)
-    ends = view.find_all(end_re, sublime.IGNORECASE)
-    secs = view.find_all(sec_re, sublime.IGNORECASE)
+    if show_env_names:
+        begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
+        end_re = r"\\end\{([^\}]*)\}"
+        sec_re = (
+                r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
+                r'subsubsection\*?|paragraph\*?|frametitle)'
+            )
+        begins = view.find_all(begin_re, sublime.IGNORECASE)
+        ends = view.find_all(end_re, sublime.IGNORECASE)
+        secs = view.find_all(sec_re, sublime.IGNORECASE)
 
     for item in filtered_symlist[:]:
         rgn = item[0]

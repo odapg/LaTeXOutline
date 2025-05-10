@@ -55,7 +55,9 @@ def _find_env_regions(view, pos, begins, ends, secs):
         sublime.status_message(e.args[0])
         return []
     
-    if sec.begin() > begin.begin():
+    # if a \section (or \subsection, etc.) is met backwards before meeting
+    # a \begin, then abort
+    if sec and sec.begin() > begin.begin():
         return []
 
     # extract the regions for the environments
