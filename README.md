@@ -29,7 +29,7 @@ It only works with *single-file* LaTeX documents.
 
 3. Click on the titles in the LaTeXOutline tab to get to the corresponding place in your LaTeX file.
 
-   Click on a `⌖` sign to take a look at a part of the LaTeX file without moving the caret. Use the standard Sublime Text keybinding `super K, super C` to go back to the original place.
+   Click on a `⌖` sign to take a look at a part of the LaTeX file without moving the caret. Use the standard Sublime Text keybinding `ctrl K, ctrl C` (`⌘ K, ⌘ C` on mac) to go back to the original place.
 
    Click on a `❐` sign to copy the corresponding label to the clipboard.
 
