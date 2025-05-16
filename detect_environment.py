@@ -6,6 +6,7 @@
 import sublime
 import sublime_plugin
 import re
+import itertools
 
 def _find_env_regions(view, pos, begins, ends, secs):
     """returns the regions corresponding to nearest matching environments"""
@@ -39,12 +40,17 @@ def _find_env_regions(view, pos, begins, ends, secs):
     new_regions = []
 
     # partition the open and closed environments
-    begin_before, begin_after =\
-        _partition(begins, lambda b: b.begin() <= pos)
-    end_before, end_after =\
-        _partition(ends, lambda e: e.end() < pos)
-    sec_before, sec_after =\
-        _partition(secs, lambda e: e.begin() < pos)
+    # begin_before, begin_after =\
+    #     _partition(begins, lambda b: b.begin() <= pos)
+    begin_before = [b for b in begins if b.begin() <= pos]
+    begin_after = [b for b in begins if b.begin() > pos]
+    # end_before, end_after =\
+    #     _partition(ends, lambda e: e.end() < pos)
+    end_before = [b for b in ends if b.end() < pos]
+    end_after = [b for b in ends if b.end() >= pos]
+    # sec_before, sec_after =\
+    #     _partition(secs, lambda e: e.begin() < pos)
+    sec_before = [s for s in secs if s.begin() < pos]
 
     # get the nearest open environments
     try:
@@ -68,12 +74,6 @@ def _find_env_regions(view, pos, begins, ends, secs):
     if view.substr(begin_region) == view.substr(end_region):
         new_regions.append(begin_region)
         new_regions.append(end_region)
-    elif one_sel:
-        sublime.status_message(
-            "The environment begin and end does not match:"
-            "'{0}' and '{1}'"
-            .format(view.substr(begin_region), view.substr(end_region))
-        )
     if not new_regions:
         sublime.status_message("Environment detection failed")
 

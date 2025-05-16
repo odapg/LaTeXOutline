@@ -25,7 +25,7 @@ It only works with *single-file* LaTeX documents.
 
 2. Use the command Palette entries `LaTeXOutline: ToC on the Right` (or `Left`), `LaTeXOutline: ToC and labels on the Right` (or `Left`) to open the outline pane. Use `LaTeX Outline: Close sidebar` to close it.
 
-   Alternatively, use the corresponding shortcuts (`super j, a`, `super j, e`, `super j, z` by default, where `super` is `ctrl` on windows/linux and `⌘` on mac). See the keybindings settings for more details.
+   Alternatively, use the corresponding shortcuts (by default, `ctrl j, a`, `ctrl j, e`, `ctrl j, z` on windows/linux and `⌘ j, a`, `⌘ j, e`, `⌘ j, z` on mac). See the keybindings settings for more details.
 
 3. Click on the titles in the LaTeXOutline tab to get to the corresponding place in your LaTeX file.
 

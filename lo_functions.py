@@ -10,7 +10,6 @@ from sublime import Region
 from .parse_aux import parse_aux_file
 from .detect_environment import _find_env_regions
 
-
 # -------------------------- Characters --------------------------
 # Changes here should also be reported in latexoutline.sublime-syntax
 # Suggestions: ▪ ⌑ ⦾ ⁌ ∙ ◦ ⦿ ■ 𑗕 ◉ • ⸱ ‣ ▫ ⊙ ⊛ ⏺ ʘ ⏿ ◎ ⦿ ⌖
@@ -63,7 +62,7 @@ def show_outline(window, side="right", outline_type="toc"):
 def refresh_lo_view(lo_view, path, view, outline_type):
     '''Refresh the contents of the outline view'''
 
-    # Get the section list
+    # Get the section/label list
     unfiltered_st_symlist = get_st_symbols(view, outline_type)
     sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type, path, view)
     active_view_id = view.id()
@@ -324,16 +323,16 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path, view):
     sym_list = []
 
     # Gets the \begins and \ends once for all to be used with _find_env_regions
-    if show_env_names:
-        begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
-        end_re = r"\\end\{([^\}]*)\}"
-        sec_re = (
-                r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
-                r'subsubsection\*?|paragraph\*?|frametitle)'
-            )
-        begins = view.find_all(begin_re, sublime.IGNORECASE)
-        ends = view.find_all(end_re, sublime.IGNORECASE)
-        secs = view.find_all(sec_re, sublime.IGNORECASE)
+    # if show_env_names:
+    #     begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
+    #     end_re = r"\\end\{([^\}]*)\}"
+    #     sec_re = (
+    #             r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
+    #             r'subsubsection\*?|paragraph\*?|frametitle)'
+    #         )
+    #     begins = view.find_all(begin_re, sublime.IGNORECASE)
+    #     ends = view.find_all(end_re, sublime.IGNORECASE)
+    #     secs = view.find_all(sec_re, sublime.IGNORECASE)
 
     for item in filtered_symlist[:]:
         rgn = item[0]
@@ -375,15 +374,16 @@ def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path, view):
                 new_sym = prefix["label"] + 'Eq. ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
             elif show_ref_nb and ref:
                 # Looks for the type of environment corresponding to the label
-                if show_env_names:
-                    env_regions = _find_env_regions(view, rgn.a, begins, ends, secs)
-                    if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
-                        env_type = "↪ Ref."
-                    else:
-                        env_type = view.substr(env_regions[0])
-                        env_type = env_type.title()
-                else:
-                    env_type = "Ref."
+                # if show_env_names: 
+                #     env_type = "Ref."
+                #     # env_regions = _find_env_regions(view, rgn.a, begins, ends, secs)
+                #     # if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
+                #     #     env_type = "↪ Ref."
+                #     # else:
+                #     #     env_type = view.substr(env_regions[0])
+                #     #     env_type = env_type.title()
+                # else:
+                env_type = "Ref."
 
                 new_sym = prefix["label"] + env_type + ' ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
             else:

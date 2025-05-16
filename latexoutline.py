@@ -156,7 +156,7 @@ class LatexOutlineSyncEventHandler(EventListener):
 class LatexOutlineEventHandler(EventListener):
 
 # ------- 
-# Reset the outline when the user focuses on another LaTeX document
+# Reset the outline when the user opens LO or focuses on another LaTeX document
 
     def on_activated(self, view):
         if not view.match_selector(0, "text.tex.latex"):
