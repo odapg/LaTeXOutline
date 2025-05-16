@@ -4,11 +4,14 @@
 import os
 import sublime
 import sublime_plugin
+from sublime_plugin import TextCommand
 import re
 import unicodedata
 from sublime import Region
 from .parse_aux import parse_aux_file
 from .detect_environment import _find_env_regions
+import time
+import threading
 
 # -------------------------- Characters --------------------------
 # Changes here should also be reported in latexoutline.sublime-syntax
@@ -121,14 +124,19 @@ def fill_symlist(unfiltered_symlist, path, view):
              "fancy_content": fancy_content,
              "ref": ref}
             )
-    
+
+    # Getting environment names can take some time; better let it in the background
+    if show_env_names:
+        thread = GetEnvNamesTask(view)
+        thread.start()
+
     return sym_list
 
 
 # --------------------------
 
 def refresh_lo_view(lo_view, path, view, outline_type):
-    '''Refresh the contents of the outline view'''
+    '''Completely refresh the contents of the outline view'''
 
     # Get the section/label list
     unfiltered_st_symlist = get_st_symbols(view)
@@ -136,20 +144,40 @@ def refresh_lo_view(lo_view, path, view, outline_type):
     active_view_id = view.id()
 
     if lo_view is not None:
+        # Save variables to the sidebar view settings
         lo_view.settings().erase('symlist')
-        fill_sidebar(lo_view, sym_list, outline_type, path, active_view_id)
+        lo_view.settings().set('symlist', sym_list)
+        if active_view_id:
+            lo_view.settings().set('active_view', active_view_id)
+        if path:
+            lo_view.settings().set('current_file', path)
+        # Fills the sidebar contents
+        fill_sidebar(lo_view, sym_list, outline_type)
 
 
 # --------------------------
 
-def fill_sidebar(lo_view, sym_list, outline_type, path=None, active_view_id=None):
+def fill_sidebar(lo_view, sym_list, outline_type):
+    '''Fills the contents of the outline view'''
     lo_view.run_command('latex_outline_fill_sidebar', 
-                                {'symlist': sym_list,
-                                 'outline_type': outline_type,
-                                 'path': path,
-                                 'active_view': active_view_id}
-                            )
+                                {'symlist': sym_list,'outline_type': outline_type})
 
+# --------------------------
+
+class LatexOutlineFillSidebarCommand(TextCommand):
+    '''Text command for the latter'''
+    def run(self, edit, symlist=None, outline_type="full"):
+        
+        if outline_type == "toc":
+            symlist_contents = [item["fancy_content"] for item in symlist 
+                                if item["type"] != "label"]
+        else:
+            symlist_contents = [item["fancy_content"] for item in symlist]
+            
+        self.view.erase(edit, Region(0, self.view.size()))    
+        self.view.insert(edit, 0, "\n".join(symlist_contents))
+        self.view.sel().clear()
+       
 
 # --------------------------
 
@@ -206,10 +234,8 @@ def get_ref(true_sym, type, aux_data):
                                 if true_sym == entry['main_content']), ('',''))
         if ref and name == 'equation':
             is_equation = True
-            # ref = '(' + ref + ')'
     # Sections
     else:
-        # Find the references of sections
         ts = normalize_for_comparison(true_sym)
         for i, data_item in enumerate(aux_data):
             # Minimal check, this is not very precise, but should work
@@ -273,9 +299,18 @@ def new_lo_line(true_sym, ref, is_equation, type, show_ref_nb, shift):
 
 
 # --------------------------
+class GetEnvNamesTask(threading.Thread):
+    def __init__(self, active_view):
+        super().__init__()
+        self.active_view = active_view
 
-def get_env_names(view):
-    pass
+    def run(self):
+        print("GetEnvNames started...")
+        print(self.active_view)
+        time.sleep(5)
+        print("GetEnvNames finished.")
+        
+
     # Gets the \begins and \ends once for all to be used with _find_env_regions
     # if show_env_names:
     #     begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"

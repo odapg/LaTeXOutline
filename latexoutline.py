@@ -4,7 +4,7 @@
 import sublime
 import sublime_plugin
 from sublime import Region, set_timeout_async
-from sublime_plugin import WindowCommand, TextCommand, EventListener
+from sublime_plugin import WindowCommand, EventListener
 from .lo_functions import * 
 import re
 import os
@@ -115,30 +115,6 @@ class LatexOutlineRefreshCommand(WindowCommand):
             refresh_lo_view(lo_view, path, active_view, outline_type)
 
 
-# ----------------------------------------------------
-# Fills the contents of the outline view (not to be used directly)
-
-class LatexOutlineFillSidebarCommand(TextCommand):
-
-    def run(self, edit, symlist=None, outline_type="full", path=None, active_view=None):
-        
-        self.view.erase(edit, Region(0, self.view.size()))
-        if outline_type == "toc":
-            symlist_contents = [item["fancy_content"] for item in symlist 
-                                if item["type"] != "label"]
-        else:
-            symlist_contents = [item["fancy_content"] for item in symlist]
-            
-        self.view.insert(edit, 0, "\n".join(symlist_contents))
-       
-        self.view.settings().set('symlist', symlist)
-        if active_view:
-            self.view.settings().set('active_view', active_view)
-        if path:
-            self.view.settings().set('current_file', path)
-        self.view.sel().clear()
-       
-       
 # ----------------------------------------------------#
 #                   Sync event handler                #
 # ----------------------------------------------------#
