@@ -60,7 +60,7 @@ def show_outline(window, side="right", outline_type="toc"):
 
 # --------------------------
 
-def fill_symlist(unfiltered_symlist, outline_type, path, view):
+def fill_symlist(unfiltered_symlist, path, view):
     '''
     Filters the symlist to only show sections and labels
     Prepares their presentation in the LO view, put it in the 'symlist' setting
@@ -69,12 +69,8 @@ def fill_symlist(unfiltered_symlist, outline_type, path, view):
     show_ref_nb = lo_settings.get('show_ref_numbers')
     show_env_names = lo_settings.get('show_environments_names')
 
-    if outline_type == "toc":
-        pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*'
-        filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
-    else:
-        pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*|[^\\].*'
-        filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
+    pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*|[^\\].*'
+    filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
         
     part_pattern = re.compile(r"^Part")
     chap_pattern = re.compile(r"^Chapter:")
@@ -129,20 +125,21 @@ def refresh_lo_view(lo_view, path, view, outline_type):
     '''Refresh the contents of the outline view'''
 
     # Get the section/label list
-    unfiltered_st_symlist = get_st_symbols(view, outline_type)
-    sym_list = fill_symlist(unfiltered_st_symlist, outline_type, path, view)
+    unfiltered_st_symlist = get_st_symbols(view)
+    sym_list = fill_symlist(unfiltered_st_symlist, path, view)
     active_view_id = view.id()
 
     if lo_view is not None:
         lo_view.settings().erase('symlist')
-        fill_sidebar(sym_list, path, active_view_id, lo_view)
+        fill_sidebar(sym_list, outline_type, path, active_view_id, lo_view)
 
 
 # --------------------------
 
-def fill_sidebar(sym_list, path, active_view_id, lo_view):
+def fill_sidebar(sym_list, outline_type, path, active_view_id, lo_view):
     lo_view.run_command('latex_outline_fill_sidebar', 
                                 {'symlist': sym_list,
+                                 'outline_type': outline_type,
                                  'path': path,
                                  'active_view': active_view_id}
                             )
@@ -162,7 +159,12 @@ def sync_lo_view():
 
         # Refresh the regions (only) in the current symlist
         refresh_regions(lo_view, view, outline_type)
-        sym_list = lo_view.settings().get('symlist')
+        settings_sym_list = lo_view.settings().get('symlist')
+        if outline_type == "toc":
+            sym_list = [item for item in settings_sym_list
+                                if item["type"] != "label"]
+        else:
+            sym_list = settings_sym_list
         
         point = view.sel()[0].end()
         range_lows = [view.line(item['region'][0]).begin() for item in sym_list]
@@ -447,20 +449,15 @@ def get_sidebar_status(window):
 
 # --------------------------
 
-def get_st_symbols(view, outline_type):
+def get_st_symbols(view):
     '''
     Ask ST for the symbols list and apply a first filter according 
     to the chosen outline type
     '''
-    if outline_type == "toc":
-        unfiltered_st_symlist = [
-            (v.region, v.name) for v in view.symbol_regions() if v.kind[1] == 'f'
-        ]
-    else:
-        unfiltered_st_symlist = [
-            (v.region, v.name) for v in view.symbol_regions()
-            if v.kind[1] == 'f' or v.kind[1] == 'l'
-        ]
+    unfiltered_st_symlist = [
+        (v.region, v.name) for v in view.symbol_regions()
+        if v.kind[1] == 'f' or v.kind[1] == 'l'
+    ]
     return unfiltered_st_symlist
 
 # --------------------------
@@ -502,7 +499,7 @@ def refresh_regions(lo_view, active_view, outline_type):
     Merely refresh the regions in the symlist setting
     '''
     sym_list = lo_view.settings().get('symlist')
-    unfiltered_st_symlist = get_st_symbols(active_view, outline_type)
+    unfiltered_st_symlist = get_st_symbols(active_view)
 
     first=None
     new_sym_list = sym_list

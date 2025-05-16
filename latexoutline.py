@@ -107,10 +107,15 @@ class LatexOutlineRefreshCommand(WindowCommand):
 
 class LatexOutlineFillSidebarCommand(TextCommand):
 
-    def run(self, edit, symlist=None, path=None, active_view=None):
+    def run(self, edit, symlist=None, outline_type="full", path=None, active_view=None):
         
         self.view.erase(edit, Region(0, self.view.size()))
-        symlist_contents = [item["fancy_content"] for item in symlist]
+        if outline_type == "toc":
+            symlist_contents = [item["fancy_content"] for item in symlist 
+                                if item["type"] != "label"]
+        else:
+            symlist_contents = [item["fancy_content"] for item in symlist]
+            
         self.view.insert(edit, 0, "\n".join(symlist_contents))
        
         self.view.settings().set('symlist', symlist)
