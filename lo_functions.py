@@ -89,18 +89,6 @@ def fill_symlist(unfiltered_symlist, outline_type, path, view):
     
     sym_list = []
 
-    # Gets the \begins and \ends once for all to be used with _find_env_regions
-    # if show_env_names:
-    #     begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
-    #     end_re = r"\\end\{([^\}]*)\}"
-    #     sec_re = (
-    #             r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
-    #             r'subsubsection\*?|paragraph\*?|frametitle)'
-    #         )
-    #     begins = view.find_all(begin_re, sublime.IGNORECASE)
-    #     ends = view.find_all(end_re, sublime.IGNORECASE)
-    #     secs = view.find_all(sec_re, sublime.IGNORECASE)
-
     for item in filtered_symlist:
         rgn = item[0]
         sym = re.sub(r'\n', ' ', item[1])
@@ -147,7 +135,13 @@ def refresh_lo_view(lo_view, path, view, outline_type):
 
     if lo_view is not None:
         lo_view.settings().erase('symlist')
-        lo_view.run_command('latex_outline_fill_sidebar', 
+        fill_sidebar(sym_list, path, active_view_id, lo_view)
+
+
+# --------------------------
+
+def fill_sidebar(sym_list, path, active_view_id, lo_view):
+    lo_view.run_command('latex_outline_fill_sidebar', 
                                 {'symlist': sym_list,
                                  'path': path,
                                  'active_view': active_view_id}
@@ -216,21 +210,14 @@ def sym_line_descr(sym, true_sym, type, show_ref_nb, shift, aux_data):
                                 if sym == entry['main_content']), ('',''))
         if show_ref_nb and ref and name == 'equation':
             ref = '(' + ref + ')'
-            new_sym = prefix["label"] + 'Eq. ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
+            new_sym = (prefix["label"] + 'Eq. ' + ref 
+                        + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
         elif show_ref_nb and ref:
-            # Looks for the type of environment corresponding to the label
-            # if show_env_names: 
-            #     env_type = "Ref."
-            #     # env_regions = _find_env_regions(view, rgn.a, begins, ends, secs)
-            #     # if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
-            #     #     env_type = "↪ Ref."
-            #     # else:
-            #     #     env_type = view.substr(env_regions[0])
-            #     #     env_type = env_type.title()
-            # else:
+            
             env_type = "Ref."
 
-            new_sym = prefix["label"] + env_type + ' ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
+            new_sym = (prefix["label"] + env_type + ' ' + ref 
+                + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
         else:
             new_sym = prefix["label"] + true_sym + prefix["copy"] + prefix["takealook"]
     # Sections
@@ -263,6 +250,34 @@ def sym_line_descr(sym, true_sym, type, show_ref_nb, shift, aux_data):
 
     return new_sym, ref
 
+
+# --------------------------
+
+def get_env_names():
+    pass
+    # Gets the \begins and \ends once for all to be used with _find_env_regions
+    # if show_env_names:
+    #     begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
+    #     end_re = r"\\end\{([^\}]*)\}"
+    #     sec_re = (
+    #             r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
+    #             r'subsubsection\*?|paragraph\*?|frametitle)'
+    #         )
+    #     begins = view.find_all(begin_re, sublime.IGNORECASE)
+    #     ends = view.find_all(end_re, sublime.IGNORECASE)
+    #     secs = view.find_all(sec_re, sublime.IGNORECASE)
+
+
+    # Looks for the type of environment corresponding to the label
+            # if show_env_names: 
+            #     env_type = "Ref."
+            #     # env_regions = _find_env_regions(view, rgn.a, begins, ends, secs)
+            #     # if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
+            #     #     env_type = "↪ Ref."
+            #     # else:
+            #     #     env_type = view.substr(env_regions[0])
+            #     #     env_type = env_type.title()
+            # else:
 
 # --------------------------
 
