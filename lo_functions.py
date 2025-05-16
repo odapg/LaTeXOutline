@@ -29,7 +29,7 @@ lo_chars = {
 
 # ----------------------------------------------------------------------------#
 #                                                                             #
-#                 Functions directly associated with commands                 #
+#                               MAIN FUNCTIONS                                #
 #                                                                             #
 # ----------------------------------------------------------------------------#
 
@@ -57,6 +57,84 @@ def show_outline(window, side="right", outline_type="toc"):
 
     window.focus_view(prev_focus)
 
+
+# --------------------------
+
+def fill_symlist(unfiltered_symlist, outline_type, path, view):
+    '''
+    Filters the symlist to only show sections and labels
+    Prepares their presentation in the LO view, put it in the 'symlist' setting
+    '''
+    lo_settings = sublime.load_settings('latexoutline.sublime-settings')
+    show_ref_nb = lo_settings.get('show_ref_numbers')
+    show_env_names = lo_settings.get('show_environments_names')
+
+    if outline_type == "toc":
+        pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*'
+        filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
+    else:
+        pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*|[^\\].*'
+        filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
+        
+    part_pattern = re.compile(r"^Part")
+    chap_pattern = re.compile(r"^Chapter:")
+    
+    shift = 0
+    if any(part_pattern.search(b) for _, b in filtered_symlist):
+        shift = 2
+    elif any(chap_pattern.search(b) for _, b in filtered_symlist):
+        shift = 1
+
+    aux_data = get_aux_file_data(path)
+    
+    sym_list = []
+
+    # Gets the \begins and \ends once for all to be used with _find_env_regions
+    # if show_env_names:
+    #     begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
+    #     end_re = r"\\end\{([^\}]*)\}"
+    #     sec_re = (
+    #             r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
+    #             r'subsubsection\*?|paragraph\*?|frametitle)'
+    #         )
+    #     begins = view.find_all(begin_re, sublime.IGNORECASE)
+    #     ends = view.find_all(end_re, sublime.IGNORECASE)
+    #     secs = view.find_all(sec_re, sublime.IGNORECASE)
+
+    for item in filtered_symlist:
+        rgn = item[0]
+        sym = re.sub(r'\n', ' ', item[1])
+
+        # Get the ST symbol entry type and content
+        pattern = (
+            r'^(Part\*?|Chapter\*?|Section\*?|Subsection\*?|'
+            r'Subsubsection\*?|Paragraph\*?|Frametitle): (.+)'
+        )
+        match = re.match(pattern, sym)
+        if match:
+            type = match.group(1).lower()
+            true_sym = match.group(2)
+        else:
+           type = "label"
+           true_sym = sym
+
+        new_sym, ref = sym_line_descr(sym, true_sym, type, show_ref_nb, shift, aux_data)
+
+        # Creates the entry of the generated symbol list
+        sym_list.append(
+            {"region": (rgn.a, rgn.b),
+             "type": type,
+             "content": sym,
+             "fancy_content": new_sym,
+             "ref": ref}
+            )
+    
+    # Last chance
+    refless_items = [sym for sym in sym_list if sym["type"] != "label" and ref is None]
+
+    return sym_list
+
+
 # --------------------------
 
 def refresh_lo_view(lo_view, path, view, outline_type):
@@ -64,7 +142,7 @@ def refresh_lo_view(lo_view, path, view, outline_type):
 
     # Get the section/label list
     unfiltered_st_symlist = get_st_symbols(view, outline_type)
-    sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type, path, view)
+    sym_list = fill_symlist(unfiltered_st_symlist, outline_type, path, view)
     active_view_id = view.id()
 
     if lo_view is not None:
@@ -74,6 +152,7 @@ def refresh_lo_view(lo_view, path, view, outline_type):
                                  'path': path,
                                  'active_view': active_view_id}
                             )
+
 
 # --------------------------
 
@@ -104,6 +183,85 @@ def sync_lo_view():
         lo_view.set_syntax_file('Packages/LaTeXOutline/latexoutline.sublime-syntax')
 
     view.settings().set('sync_in_progress', False)
+
+
+# --------------------------------------------------------------------------#
+#                                                                           #
+#                          Intermediate functions                           #
+#                                                                           #
+# --------------------------------------------------------------------------#
+
+
+def sym_line_descr(sym, true_sym, type, show_ref_nb, shift, aux_data):
+    '''Creates the content to be displayed'''
+    
+    prefix = {
+    "part" : lo_chars['part'] + ' ',
+    "chapter" : ' ' + lo_chars['chapter'] + ' ' if shift==2 else lo_chars['chapter'] + ' ',
+    "section" : ' ' * shift + lo_chars['section'] + ' ',
+    "subsection" : ' ' * (shift + 1) + lo_chars['subsection'] + ' ',
+    "subsubsection" : ' ' * (shift + 2) + lo_chars['subsubsection'] + ' ',
+    "paragraph" : ' ' * (shift + 3) + lo_chars['paragraph'] + ' ',
+    "frametitle" : lo_chars['frametitle'] + ' ',
+    "label" : '  ' + lo_chars['label'],
+    "copy" : ' ' + lo_chars['copy'], # + ' ',
+    "takealook" : ' ' + lo_chars['takealook'] + ' ',
+    }
+    ref = None
+    
+    # Labels
+    if type == "label":
+        if aux_data:
+            ref, name = next(((entry['reference'], entry['entry_type']) for entry in aux_data
+                                if sym == entry['main_content']), ('',''))
+        if show_ref_nb and ref and name == 'equation':
+            ref = '(' + ref + ')'
+            new_sym = prefix["label"] + 'Eq. ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
+        elif show_ref_nb and ref:
+            # Looks for the type of environment corresponding to the label
+            # if show_env_names: 
+            #     env_type = "Ref."
+            #     # env_regions = _find_env_regions(view, rgn.a, begins, ends, secs)
+            #     # if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
+            #     #     env_type = "↪ Ref."
+            #     # else:
+            #     #     env_type = view.substr(env_regions[0])
+            #     #     env_type = env_type.title()
+            # else:
+            env_type = "Ref."
+
+            new_sym = prefix["label"] + env_type + ' ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
+        else:
+            new_sym = prefix["label"] + true_sym + prefix["copy"] + prefix["takealook"]
+    # Sections
+    else:
+        # Find the references of sections
+        if show_ref_nb and aux_data:
+            ts = normalize_for_comparison(true_sym)
+            for i, data_item in enumerate(aux_data):
+                # Minimal check, this is not very precise, but should work
+                # in most cases
+                if ts == normalize_for_comparison(data_item['main_content']):
+                    correct_item = aux_data.pop(i)
+                    ref = correct_item['reference']
+                    break
+        simple_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', true_sym)
+        simple_sym = re.sub(r'\\label\{[^\}]*\}\s*', '', simple_sym)
+        simple_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', simple_sym)
+        simple_sym = re.sub(r'\s*~\s*', r' ', simple_sym)
+        if '*' in type:
+            new_sym = prefix[type[:-1]] + '* ' + simple_sym + prefix["takealook"]
+        elif ref:
+            new_sym = prefix[type] + ref + ' ' + simple_sym + prefix["takealook"]
+        else:
+            new_sym = prefix[type] + simple_sym + prefix["takealook"]
+
+        new_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', new_sym)
+        new_sym = re.sub(r'\\label\{[^\}]*\}\s*', '', new_sym)
+        new_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', new_sym)
+        new_sym = re.sub(r'\s*~\s*', r' ', new_sym)
+
+    return new_sym, ref
 
 
 # --------------------------
@@ -164,12 +322,6 @@ def reduce_layout(window, lo_view, lo_group, sym_side):
         return None
 
     return {"cols": new_cols, "rows": rows, "cells": new_cells}
-
-# --------------------------------------------------------------------------#
-#                                                                           #
-#                          Intermediate functions                           #
-#                                                                           #
-# --------------------------------------------------------------------------#
 
 
 # --------------------------
@@ -277,146 +429,6 @@ def get_sidebar_status(window):
             sidebar_on = True
 
     return sidebar_on
-
-# --------------------------
-
-def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path, view):
-    '''
-    Filters the symlist to only show sections and labels
-    Prepares their presentation in the LO view, put it in the 'symlist' setting
-    '''
-    lo_settings = sublime.load_settings('latexoutline.sublime-settings')
-    show_ref_nb = lo_settings.get('show_ref_numbers')
-    show_env_names = lo_settings.get('show_environments_names')
-
-    if outline_type == "toc":
-        pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*'
-        filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
-    else:
-        pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*|[^\\].*'
-        filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
-        
-    part_pattern = re.compile(r"^Part")
-    chap_pattern = re.compile(r"^Chapter:")
-    
-    shift = 0
-    if any(part_pattern.search(b) for _, b in filtered_symlist):
-        shift = 2
-    elif any(chap_pattern.search(b) for _, b in filtered_symlist):
-        shift = 1
-
-    prefix = {
-    "part" : lo_chars['part'] + ' ',
-    "chapter" : ' ' + lo_chars['chapter'] + ' ' if shift==2 else lo_chars['chapter'] + ' ',
-    "section" : ' ' * shift + lo_chars['section'] + ' ',
-    "subsection" : ' ' * (shift + 1) + lo_chars['subsection'] + ' ',
-    "subsubsection" : ' ' * (shift + 2) + lo_chars['subsubsection'] + ' ',
-    "paragraph" : ' ' * (shift + 3) + lo_chars['paragraph'] + ' ',
-    "frametitle" : lo_chars['frametitle'] + ' ',
-    "label" : '  ' + lo_chars['label'],
-    "copy" : ' ' + lo_chars['copy'], # + ' ',
-    "takealook" : ' ' + lo_chars['takealook'] + ' ',
-    }
-
-    aux_data = get_aux_file_data(path)
-    
-    sym_list = []
-
-    # Gets the \begins and \ends once for all to be used with _find_env_regions
-    # if show_env_names:
-    #     begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
-    #     end_re = r"\\end\{([^\}]*)\}"
-    #     sec_re = (
-    #             r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
-    #             r'subsubsection\*?|paragraph\*?|frametitle)'
-    #         )
-    #     begins = view.find_all(begin_re, sublime.IGNORECASE)
-    #     ends = view.find_all(end_re, sublime.IGNORECASE)
-    #     secs = view.find_all(sec_re, sublime.IGNORECASE)
-
-    for item in filtered_symlist[:]:
-        rgn = item[0]
-        sym = re.sub(r'\n', ' ', item[1])
-
-        # Get the ST symbol entry type and content
-        pattern = (
-            r'^(Part\*?|Chapter\*?|Section\*?|Subsection\*?|'
-            r'Subsubsection\*?|Paragraph\*?|Frametitle): (.+)'
-        )
-        match = re.match(pattern, sym)
-        if match:
-            type = match.group(1).lower()
-            true_sym = match.group(2)
-        else:
-           type = "label"
-           true_sym = sym
-        
-        # Find the references of sections
-        ref = None
-        if show_ref_nb and type != "label" and aux_data:
-            ts = normalize_for_comparison(true_sym)
-            for i, data_item in enumerate(aux_data):
-                # Minimal check, this is not very precise, but should work
-                # in most cases
-                if ts == normalize_for_comparison(data_item['main_content']):
-                    correct_item = aux_data.pop(i)
-                    filtered_symlist.remove(item)
-                    ref = correct_item['reference']
-                    break
-
-        # Creates the content to be displayed
-        if type == "label":
-            if aux_data:
-                ref, name = next(((entry['reference'], entry['entry_type']) for entry in aux_data
-                                    if sym == entry['main_content']), ('',''))
-            if show_ref_nb and ref and name == 'equation':
-                ref = '(' + ref + ')'
-                new_sym = prefix["label"] + 'Eq. ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
-            elif show_ref_nb and ref:
-                # Looks for the type of environment corresponding to the label
-                # if show_env_names: 
-                #     env_type = "Ref."
-                #     # env_regions = _find_env_regions(view, rgn.a, begins, ends, secs)
-                #     # if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
-                #     #     env_type = "↪ Ref."
-                #     # else:
-                #     #     env_type = view.substr(env_regions[0])
-                #     #     env_type = env_type.title()
-                # else:
-                env_type = "Ref."
-
-                new_sym = prefix["label"] + env_type + ' ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
-            else:
-                new_sym = prefix["label"] + true_sym + prefix["copy"] + prefix["takealook"]
-        else:
-            simple_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', true_sym)
-            simple_sym = re.sub(r'\\label\{[^\}]*\}\s*', '', simple_sym)
-            simple_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', simple_sym)
-            simple_sym = re.sub(r'\s*~\s*', r' ', simple_sym)
-            if '*' in type:
-                new_sym = prefix[type[:-1]] + '* ' + simple_sym + prefix["takealook"]
-            elif ref:
-                new_sym = prefix[type] + ref + ' ' + simple_sym + prefix["takealook"]
-            else:
-                new_sym = prefix[type] + simple_sym + prefix["takealook"]
-
-            new_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', new_sym)
-            new_sym = re.sub(r'\\label\{[^\}]*\}\s*', '', new_sym)
-            new_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', new_sym)
-            new_sym = re.sub(r'\s*~\s*', r' ', new_sym)
-        # Creates the entry of the generated symbol list
-        sym_list.append(
-            {"region": (rgn.a, rgn.b),
-             "type": type,
-             "content": sym,
-             "fancy_content": new_sym,
-             "ref": ref}
-            )
-    
-    # Last chance
-    refless_items = [sym for sym in sym_list if sym["type"] != "label" and ref is None]
-
-    return sym_list
 
 # --------------------------
 
