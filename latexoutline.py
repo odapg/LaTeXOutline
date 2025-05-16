@@ -318,7 +318,7 @@ class LatexOutlineEventHandler(EventListener):
         window.settings().erase('lo_new_layout')
 
 # -------------- 
-# Future: refresh the view after .tex has been built
+# Completely refresh the view after .tex has been built (with LaTeXTools)
 
     def on_post_window_command(self, window, command_name, args):
         if not get_sidebar_status(window):

@@ -104,20 +104,24 @@ def fill_symlist(unfiltered_symlist, path, view):
            type = "label"
            true_sym = sym
 
-        new_sym, ref = sym_line_descr(sym, true_sym, type, show_ref_nb, shift, aux_data)
+        if show_ref_nb and aux_data:
+            ref, is_equation = get_ref(true_sym, type, aux_data)
+        else:
+            ref = None
+
+        fancy_content = new_lo_line(true_sym, ref, is_equation, type, show_ref_nb, shift)
 
         # Creates the entry of the generated symbol list
         sym_list.append(
             {"region": (rgn.a, rgn.b),
              "type": type,
              "content": sym,
-             "fancy_content": new_sym,
+             "ref": ref,
+             "is_equation": is_equation,
+             "fancy_content": fancy_content,
              "ref": ref}
             )
     
-    # Last chance
-    refless_items = [sym for sym in sym_list if sym["type"] != "label" and ref is None]
-
     return sym_list
 
 
@@ -190,7 +194,37 @@ def sync_lo_view():
 # --------------------------------------------------------------------------#
 
 
-def sym_line_descr(sym, true_sym, type, show_ref_nb, shift, aux_data):
+def get_ref(true_sym, type, aux_data):
+    '''Obtains the reference of the entry'''
+    
+    ref = None
+    is_equation = False
+
+    # Labels
+    if type == "label":
+        ref, name = next(((entry['reference'], entry['entry_type']) for entry in aux_data
+                                if true_sym == entry['main_content']), ('',''))
+        if ref and name == 'equation':
+            is_equation = True
+            # ref = '(' + ref + ')'
+    # Sections
+    else:
+        # Find the references of sections
+        ts = normalize_for_comparison(true_sym)
+        for i, data_item in enumerate(aux_data):
+            # Minimal check, this is not very precise, but should work
+            # in most cases
+            if ts == normalize_for_comparison(data_item['main_content']):
+                correct_item = aux_data.pop(i)
+                ref = correct_item['reference']
+                break
+
+    return ref, is_equation
+
+
+# --------------------------
+
+def new_lo_line(true_sym, ref, is_equation, type, show_ref_nb, shift):
     '''Creates the content to be displayed'''
     
     prefix = {
@@ -205,59 +239,42 @@ def sym_line_descr(sym, true_sym, type, show_ref_nb, shift, aux_data):
     "copy" : ' ' + lo_chars['copy'], # + ' ',
     "takealook" : ' ' + lo_chars['takealook'] + ' ',
     }
-    ref = None
     
     # Labels
     if type == "label":
-        if aux_data:
-            ref, name = next(((entry['reference'], entry['entry_type']) for entry in aux_data
-                                if sym == entry['main_content']), ('',''))
-        if show_ref_nb and ref and name == 'equation':
-            ref = '(' + ref + ')'
-            new_sym = (prefix["label"] + 'Eq. ' + ref 
+        if show_ref_nb and ref and is_equation:
+            new_sym_line = (prefix["label"] + 'Eq. (' + ref +')'
                         + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
         elif show_ref_nb and ref:
-            
             env_type = "Ref."
-
-            new_sym = (prefix["label"] + env_type + ' ' + ref 
+            new_sym_line = (prefix["label"] + env_type + ' ' + ref 
                 + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
         else:
-            new_sym = prefix["label"] + true_sym + prefix["copy"] + prefix["takealook"]
+            new_sym_line = prefix["label"] + true_sym + prefix["copy"] + prefix["takealook"]
     # Sections
     else:
-        # Find the references of sections
-        if show_ref_nb and aux_data:
-            ts = normalize_for_comparison(true_sym)
-            for i, data_item in enumerate(aux_data):
-                # Minimal check, this is not very precise, but should work
-                # in most cases
-                if ts == normalize_for_comparison(data_item['main_content']):
-                    correct_item = aux_data.pop(i)
-                    ref = correct_item['reference']
-                    break
         simple_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', true_sym)
         simple_sym = re.sub(r'\\label\{[^\}]*\}\s*', '', simple_sym)
         simple_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', simple_sym)
         simple_sym = re.sub(r'\s*~\s*', r' ', simple_sym)
         if '*' in type:
-            new_sym = prefix[type[:-1]] + '* ' + simple_sym + prefix["takealook"]
+            new_sym_line = prefix[type[:-1]] + '* ' + simple_sym + prefix["takealook"]
         elif ref:
-            new_sym = prefix[type] + ref + ' ' + simple_sym + prefix["takealook"]
+            new_sym_line = prefix[type] + ref + ' ' + simple_sym + prefix["takealook"]
         else:
-            new_sym = prefix[type] + simple_sym + prefix["takealook"]
+            new_sym_line = prefix[type] + simple_sym + prefix["takealook"]
 
-        new_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', new_sym)
-        new_sym = re.sub(r'\\label\{[^\}]*\}\s*', '', new_sym)
-        new_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', new_sym)
-        new_sym = re.sub(r'\s*~\s*', r' ', new_sym)
+        new_sym_line = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', new_sym_line)
+        new_sym_line = re.sub(r'\\label\{[^\}]*\}\s*', '', new_sym_line)
+        new_sym_line = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', new_sym_line)
+        new_sym_line = re.sub(r'\s*~\s*', r' ', new_sym_line)
 
-    return new_sym, ref
+    return new_sym_line
 
 
 # --------------------------
 
-def get_env_names():
+def get_env_names(view):
     pass
     # Gets the \begins and \ends once for all to be used with _find_env_regions
     # if show_env_names:
