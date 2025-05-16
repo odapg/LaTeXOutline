@@ -107,7 +107,6 @@ def parse_writefile_line(line):
                     entry_title = entry_title[1:].lstrip()
                     if entry_title.endswith('}'):
                         entry_title = entry_title[:-1].rstrip()
-                print(entry_title)  
 
             elif raw_text.startswith('\\numberline'):
                 k = raw_text.find('{')

@@ -34,11 +34,11 @@ lo_chars = {
 # ----------------------------------------------------------------------------#
 
 
-def show_outline(window, side="right", outline_type="toc"):
+def show_outline(window, side="right", outline_type="toc", path=None):
     """
     Creates the outline view. 
     Filling it will be taken care of by LatexOutlineEventHandler which in
-    particular calls the LatexOutlineFillSidebar command.
+    particular calls the fill_sidebar command.
     """
 
     # Creates the outline view otherwise
@@ -49,7 +49,9 @@ def show_outline(window, side="right", outline_type="toc"):
     new_view.set_name(name)
     new_view.settings().set('side', side)
     new_view.settings().set('current_outline_type', outline_type)
-
+    if path:
+        new_view.settings().set('current_file', path)
+        
     arrange_layout(new_view, side)
     
     nb_groups = window.num_groups()
@@ -131,12 +133,12 @@ def refresh_lo_view(lo_view, path, view, outline_type):
 
     if lo_view is not None:
         lo_view.settings().erase('symlist')
-        fill_sidebar(sym_list, outline_type, path, active_view_id, lo_view)
+        fill_sidebar(lo_view, sym_list, outline_type, path, active_view_id)
 
 
 # --------------------------
 
-def fill_sidebar(sym_list, outline_type, path, active_view_id, lo_view):
+def fill_sidebar(lo_view, sym_list, outline_type, path=None, active_view_id=None):
     lo_view.run_command('latex_outline_fill_sidebar', 
                                 {'symlist': sym_list,
                                  'outline_type': outline_type,

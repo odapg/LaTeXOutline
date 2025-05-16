@@ -31,28 +31,36 @@ class LatexOutlineCommand(WindowCommand):
         if get_sidebar_status(self.window):
             lo_view, lo_group = get_sidebar_view_and_group(self.window)
 
-            current_side = lo_view.settings().get('side')
             current_type = lo_view.settings().get('current_outline_type')
+            current_side = lo_view.settings().get('side')
 
             if current_side == side and current_type == outline_type and not close_on_repeated_use:
                 return
-                
-            self.window.run_command('latex_outline_close_sidebar')
+
+            current_symlist = lo_view.settings().get('symlist')
+            path = lo_view.settings().get('current_file')
 
             if side != current_side:
+                self.window.run_command('latex_outline_close_sidebar')
                 if outline_type == "both":
-                    show_outline(self.window, side=side, outline_type=current_type)
+                    show_outline(self.window, side=side, outline_type=current_type, path=path)
                 else:
-                    show_outline(self.window, side=side, outline_type=outline_type)
-            elif outline_type != current_type and outline_type != "both":
-                show_outline(self.window, side=side, outline_type=outline_type)
-            elif outline_type == "both" and current_type == "toc":
-                    show_outline(self.window, side=side, outline_type="full")
-            elif outline_type == "both" and current_type == "full" and not close_on_repeated_use:
-                    show_outline(self.window, side=side, outline_type="toc")
-            else:
-                lo_view.settings().set('current_outline_type', '') 
+                    show_outline(self.window, side=side, outline_type=outline_type, path=path)
+                lo_view, lo_group = get_sidebar_view_and_group(self.window)
+                fill_sidebar(lo_view, current_symlist, outline_type)
 
+            elif outline_type != current_type and outline_type != "both":
+                fill_sidebar(lo_view, current_symlist, outline_type)
+                lo_view.settings().set('current_outline_type', outline_type)
+            elif outline_type == "both" and current_type == "toc":
+                fill_sidebar(lo_view, current_symlist, "full")
+                lo_view.settings().set('current_outline_type', "full")
+            elif outline_type == "both" and current_type == "full" and not close_on_repeated_use:
+                fill_sidebar(lo_view, current_symlist, "toc")
+                lo_view.settings().set('current_outline_type', "toc")
+            else:
+                self.window.run_command('latex_outline_close_sidebar')
+            
         # Open it otherwise
         else:
             if outline_type == "full":
@@ -121,7 +129,8 @@ class LatexOutlineFillSidebarCommand(TextCommand):
         self.view.settings().set('symlist', symlist)
         if active_view:
             self.view.settings().set('active_view', active_view)
-        self.view.settings().set('current_file', path)
+        if path:
+            self.view.settings().set('current_file', path)
         self.view.sel().clear()
        
        
@@ -198,15 +207,13 @@ class LatexOutlineEventHandler(EventListener):
             if lo_view.settings().get('current_file') != view.file_name():
                 lo_view.settings().set('current_file', view.file_name())
 
-        # -- Refreshes the data gathered from the .aux file
+        # Refreshes the data gathered from the .aux file
         path = view.file_name()
         aux_data = get_aux_file_data(path)
         lo_view.settings().set('aux_data', aux_data)
-        # --------
 
         outline_type = lo_view.settings().get('current_outline_type')
         refresh_lo_view(lo_view, view.file_name(), view, outline_type)
-        # symlist = lo_view.settings().get('symlist')
         sync_lo_view()
 
 # ------- 
