@@ -56,7 +56,7 @@ def show_outline(window, side="right", outline_type="toc", path=None):
     
     nb_groups = window.num_groups()
     window.set_view_index(new_view, nb_groups-1, 0)
-
+    
     window.focus_view(prev_focus)
 
 
