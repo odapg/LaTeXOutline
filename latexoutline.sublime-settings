@@ -3,9 +3,15 @@
   // false: no syncing
   "outline_sync": true,
 
-  // true: show the section numbers (can sometimes be inaccurate)
-  // false: only present section with bullets
-  "show_section_numbers": true,
+  // true: show the sections and references numbers (can sometimes be inaccurate)
+  // false: only present sections with bullets
+  "show_ref_numbers": true,
+
+  // true: show the environments names (Theorem, Lemma, etc.)
+  // false: only present the references
+  // It can be a bit slow on large files and old systems: environments names can appear
+  // a bit later in this case, since the process is run in the background
+  "show_environments_names": true,
 
   // true: latexoutline will use the same color scheme as current file
   // false: latexoutline will use the color scheme defined below (default)

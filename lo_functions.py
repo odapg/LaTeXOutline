@@ -4,11 +4,14 @@
 import os
 import sublime
 import sublime_plugin
+from sublime_plugin import TextCommand
 import re
 import unicodedata
 from sublime import Region
 from .parse_aux import parse_aux_file
-
+from .detect_environment import _find_env_regions, filter_non_comment_regions, _match_envs
+import time
+import threading
 
 # -------------------------- Characters --------------------------
 # Changes here should also be reported in latexoutline.sublime-syntax
@@ -29,16 +32,16 @@ lo_chars = {
 
 # ----------------------------------------------------------------------------#
 #                                                                             #
-#                 Functions directly associated with commands                 #
+#                               MAIN FUNCTIONS                                #
 #                                                                             #
 # ----------------------------------------------------------------------------#
 
 
-def show_outline(window, side="right", outline_type="toc"):
+def show_outline(window, side="right", outline_type="toc", path=None):
     """
     Creates the outline view. 
     Filling it will be taken care of by LatexOutlineEventHandler which in
-    particular calls the LatexOutlineFillSidebar command.
+    particular calls the fill_sidebar command.
     """
 
     # Creates the outline view otherwise
@@ -49,31 +52,123 @@ def show_outline(window, side="right", outline_type="toc"):
     new_view.set_name(name)
     new_view.settings().set('side', side)
     new_view.settings().set('current_outline_type', outline_type)
-
+    if path:
+        new_view.settings().set('current_file', path)
+        
     arrange_layout(new_view, side)
     
     nb_groups = window.num_groups()
     window.set_view_index(new_view, nb_groups-1, 0)
-
+    
     window.focus_view(prev_focus)
+
+
+# --------------------------
+
+def fill_symlist(unfiltered_symlist, path, view):
+    '''
+    Filters the symlist to only show sections and labels
+    Prepares their presentation in the LO view, put it in the 'symlist' setting
+    '''
+    lo_settings = sublime.load_settings('latexoutline.sublime-settings')
+    show_ref_nb = lo_settings.get('show_ref_numbers')
+    show_env_names = lo_settings.get('show_environments_names')
+
+    pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*|[^\\].*'
+    filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
+        
+    part_pattern = re.compile(r"^Part")
+    chap_pattern = re.compile(r"^Chapter:")
+    
+    shift = 0
+    if any(part_pattern.search(b) for _, b in filtered_symlist):
+        shift = 2
+    elif any(chap_pattern.search(b) for _, b in filtered_symlist):
+        shift = 1
+
+    aux_data = get_aux_file_data(path)
+    
+    sym_list = []
+
+    for item in filtered_symlist:
+        rgn, sym, type, true_sym = extract_from_sym(item)
+
+        if show_ref_nb and aux_data:
+            ref= get_ref(true_sym, type, aux_data)
+        else:
+            ref = None
+
+        is_equation = "math.block.be.latex" in view.scope_name(rgn.begin())
+
+        fancy_content = new_lo_line(true_sym, ref, type, is_equation=is_equation, 
+                                    show_ref_nb=show_ref_nb, 
+                                    show_env_names=show_env_names, shift=shift)
+
+        # Creates the entry of the generated symbol list
+        sym_list.append(
+            {"region": (rgn.a, rgn.b),
+             "type": type,
+             "content": sym,
+             "truesym": true_sym,
+             "is_equation": is_equation,
+             "fancy_content": fancy_content,
+             "ref": ref,
+             "env_type": ""}
+            )
+
+    # Getting environment names can take some time; better let it in the background
+    if show_env_names:
+        thread = GetEnvNamesTask(view)
+        thread.start()
+
+    return sym_list
+
 
 # --------------------------
 
 def refresh_lo_view(lo_view, path, view, outline_type):
-    '''Refresh the contents of the outline view'''
+    '''Completely refresh the contents of the outline view'''
 
-    # Get the section list
-    unfiltered_st_symlist = get_st_symbols(view, outline_type)
-    sym_list = filter_and_decorate_symlist(unfiltered_st_symlist, outline_type, path)
+    # Get the section/label list
+    unfiltered_st_symlist = get_st_symbols(view)
+    sym_list = fill_symlist(unfiltered_st_symlist, path, view)
     active_view_id = view.id()
 
     if lo_view is not None:
+        # Save variables to the sidebar view settings
         lo_view.settings().erase('symlist')
-        lo_view.run_command('latex_outline_fill_sidebar', 
-                                {'symlist': sym_list,
-                                 'path': path,
-                                 'active_view': active_view_id}
-                            )
+        lo_view.settings().set('symlist', sym_list)
+        if active_view_id:
+            lo_view.settings().set('active_view', active_view_id)
+        if path:
+            lo_view.settings().set('current_file', path)
+        # Fills the sidebar contents
+        fill_sidebar(lo_view, sym_list, outline_type)
+
+
+# --------------------------
+
+def fill_sidebar(lo_view, sym_list, outline_type):
+    '''Fills the contents of the outline view'''
+    lo_view.run_command('latex_outline_fill_sidebar', 
+                                {'symlist': sym_list, 'outline_type': outline_type})
+
+# --------------------------
+
+class LatexOutlineFillSidebarCommand(TextCommand):
+    '''Text command for the latter'''
+    def run(self, edit, symlist=None, outline_type="full"):
+        
+        if outline_type == "toc":
+            symlist_contents = [item["fancy_content"] for item in symlist 
+                                if item["type"] != "label"]
+        else:
+            symlist_contents = [item["fancy_content"] for item in symlist]
+            
+        self.view.erase(edit, Region(0, self.view.size()))    
+        self.view.insert(edit, 0, "\n".join(symlist_contents))
+        self.view.sel().clear()
+       
 
 # --------------------------
 
@@ -88,8 +183,13 @@ def sync_lo_view():
         view = sublime.active_window().active_view()
 
         # Refresh the regions (only) in the current symlist
-        refresh_regions(lo_view, view, outline_type)
-        sym_list = lo_view.settings().get('symlist')
+        refresh_regions(lo_view, view)
+        settings_sym_list = lo_view.settings().get('symlist')
+        if outline_type == "toc":
+            sym_list = [item for item in settings_sym_list
+                                if item["type"] != "label"]
+        else:
+            sym_list = settings_sym_list
         
         point = view.sel()[0].end()
         range_lows = [view.line(item['region'][0]).begin() for item in sym_list]
@@ -106,11 +206,232 @@ def sync_lo_view():
     view.settings().set('sync_in_progress', False)
 
 
+# --------------------------------------------------------------------------#
+#                                                                           #
+#                          Intermediate functions                           #
+#                                                                           #
+# --------------------------------------------------------------------------#
+
+
+def get_ref(true_sym, type, aux_data):
+    '''Obtains the reference of the entry'''
+    
+    ref = None
+
+    # Labels
+    if type == "label":
+        ref = next((entry['reference'] for entry in aux_data
+                                if true_sym == entry['main_content']), '*')
+    # Sections
+    else:
+        ts = normalize_for_comparison(true_sym)
+        for i, data_item in enumerate(aux_data):
+            # Minimal check, this is not very precise, but should work
+            # in most cases
+            if ts == normalize_for_comparison(data_item['main_content']):
+                correct_item = aux_data.pop(i)
+                ref = correct_item['reference']
+                break
+
+    return ref
+
+
+# --------------------------
+
+def new_lo_line(true_sym, ref, type, is_equation=False,
+                 env_type="Ref.", show_ref_nb=False, show_env_names=False, shift=0):
+    '''Creates the content to be displayed'''
+    
+    prefix = {
+    "part" : lo_chars['part'] + ' ',
+    "chapter" : ' ' + lo_chars['chapter'] + ' ' if shift==2 else lo_chars['chapter'] + ' ',
+    "section" : ' ' * shift + lo_chars['section'] + ' ',
+    "subsection" : ' ' * (shift + 1) + lo_chars['subsection'] + ' ',
+    "subsubsection" : ' ' * (shift + 2) + lo_chars['subsubsection'] + ' ',
+    "paragraph" : ' ' * (shift + 3) + lo_chars['paragraph'] + ' ',
+    "frametitle" : lo_chars['frametitle'] + ' ',
+    "label" : '  ' + lo_chars['label'],
+    "copy" : ' ' + lo_chars['copy'], # + ' ',
+    "takealook" : ' ' + lo_chars['takealook'] + ' ',
+    }
+    
+    # Labels
+    if type == "label":
+        if show_ref_nb:
+            if ref and is_equation:
+                new_sym_line = (prefix["label"] + 'Eq. (' + ref +')'
+                            + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
+            elif ref:
+                new_sym_line = (prefix["label"] + env_type + ' ' + ref 
+                    + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
+            else:
+                new_sym_line = (prefix["label"] + env_type + ' *' 
+                    + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
+        elif show_env_names:
+            new_sym_line = (prefix["label"] + env_type + ' ' + prefix["copy"] 
+                + prefix["takealook"] + '{' + true_sym + '}')
+        else:
+            new_sym_line = prefix["label"] + true_sym + prefix["copy"] + prefix["takealook"]
+    # Sections
+    else:
+        simple_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', true_sym)
+        simple_sym = re.sub(r'\\label\{[^\}]*\}\s*', '', simple_sym)
+        simple_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', simple_sym)
+        simple_sym = re.sub(r'\s*~\s*', r' ', simple_sym)
+        if '*' in type:
+            new_sym_line = prefix[type[:-1]] + '* ' + simple_sym + prefix["takealook"]
+        elif show_ref_nb and ref:
+            new_sym_line = prefix[type] + ref + ' ' + simple_sym + prefix["takealook"]
+        else:
+            new_sym_line = prefix[type] + simple_sym + prefix["takealook"]
+
+        new_sym_line = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', new_sym_line)
+        new_sym_line = re.sub(r'\\label\{[^\}]*\}\s*', '', new_sym_line)
+        new_sym_line = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', new_sym_line)
+        new_sym_line = re.sub(r'\s*~\s*', r' ', new_sym_line)
+
+    return new_sym_line
+
+
+# --------------------------
+class GetEnvNamesTask(threading.Thread):
+    def __init__(self, active_view):
+        super().__init__()
+        self.active_view = active_view
+
+    def run(self):
+        view = self.active_view
+
+        lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
+        if not lo_view:
+            return
+        symlist = lo_view.settings().get('symlist')
+        lo_settings = sublime.load_settings('latexoutline.sublime-settings')
+        show_env_names = lo_settings.get('show_environments_names')
+
+        shift = 0
+        if "part" in [sym["type"] for sym in symlist]:
+            shift = 2
+        elif "chapter" in [sym["type"] for sym in symlist]:
+            shift = 1
+
+        begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
+        end_re = r"\\end\{([^\}]*)\}"
+        sec_re = (
+                r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
+                r'subsubsection\*?|paragraph\*?|frametitle)'
+            )
+        st_begins = view.find_all(begin_re, sublime.IGNORECASE)
+        st_ends = view.find_all(end_re, sublime.IGNORECASE)
+        begins = filter_non_comment_regions(view, st_begins)
+        ends = filter_non_comment_regions(view, st_ends)
+        pairs = _match_envs(begins, ends)
+
+        for i in range(len(symlist)):
+            sym = symlist[i]
+            if sym["type"] != "label" or sym["is_equation"]:
+                pass
+            rgn = sym["region"]
+            env_regions = _find_env_regions(view, rgn[0], pairs)
+            if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
+                env_type = " ↪ Ref."
+            else:
+                env_type = view.substr(env_regions[0])
+                env_type = env_type.title()
+            symlist[i]["env_type"] = env_type
+            symlist[i]["fancy_content"] = new_lo_line(sym["truesym"],
+                                             sym["ref"], sym["type"], 
+                                             sym["is_equation"],
+                                             env_type=env_type,
+                                             show_ref_nb=True,
+                                             show_env_names = show_env_names,
+                                             shift=shift)
+        # If it changed in the meantime
+        lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
+        if lo_view:
+            lo_view.settings().set('symlist', symlist)
+            outline_type = lo_view.settings().get('current_outline_type')
+            fill_sidebar(lo_view, symlist, outline_type)
+        
+# --------------------------
+
+def refresh_regions(lo_view, active_view):
+    '''
+    Merely refresh the regions in the symlist
+    '''
+    sym_list = lo_view.settings().get('symlist')
+    unfiltered_st_symlist = get_st_symbols(active_view)
+
+    for item in sym_list:
+        first=None
+        key = item["content"]
+        for i, (x, y) in enumerate(unfiltered_st_symlist):
+            if re.sub(r'\n', ' ', y) == key:
+                first = unfiltered_st_symlist.pop(i)
+                break      
+
+        if first:
+            region = first[0]
+            item["region"] = (region.a, region.b)
+
+    lo_view.settings().set('symlist', sym_list)
+    return 
+
+# --------------------------
+
+def light_refresh(lo_view, active_view, outline_type):
+    '''
+    Refresh the regions, add new/remove old entries
+    '''
+    symlist = lo_view.settings().get('symlist')
+    lo_settings = sublime.load_settings('latexoutline.sublime-settings')
+    show_ref_nb = lo_settings.get('show_ref_numbers')
+    unfiltered_st_symlist = get_st_symbols(active_view)
+    st_symlist = [sym for sym in unfiltered_st_symlist if not sym[1].startswith('\\')]
+    print(st_symlist)
+    shift = 0
+    if "part" in [sym["type"] for sym in symlist]:
+        shift = 2
+    elif "chapter" in [sym["type"] for sym in symlist]:
+        shift = 1
+
+    new_symlist = []
+    for sym in st_symlist:
+        key = re.sub(r'\n', ' ', sym[1])
+        item = {}
+        key_unfound = True
+        for i in range(len(symlist)):
+            if key == symlist[i]["content"]:
+                item=symlist.pop(i)
+                key_unfound = False
+                break
+
+        if key_unfound:
+            rgn, sym, type, true_sym = extract_from_sym(sym)
+            is_equation = "math.block.be.latex" in active_view.scope_name(rgn.begin())
+            fancy_content = new_lo_line(true_sym, "…", type, is_equation, 
+                                    show_ref_nb=show_ref_nb, 
+                                    show_env_names=show_env_names, shift=shift)
+            item = {"region": (rgn.a, rgn.b),
+             "type": type,
+             "content": sym,
+             "is_equation": is_equation,
+             "fancy_content": fancy_content,
+             "ref": "",
+             "env_type": ""}
+
+        new_symlist.append(item)
+        
+    lo_view.settings().set('symlist', new_symlist)
+    return new_symlist
+
+
+
 # --------------------------
 
 def goto_region(active_view, region_position):
     if active_view and region_position:
-        r = Region(region_position[0], region_position[1])
+        r = Region(region_position[0], region_position[0])
         active_view.show_at_center(r)
         active_view.sel().clear()
         active_view.sel().add(r)
@@ -142,39 +463,8 @@ def copy_label(active_view, region_position):
 
 # --------------------------
 
-def reduce_layout(window, lo_view, lo_group, sym_side):
-    '''Determine the new layout when closing LO'''
-
-    current_layout = window.layout()
-    rows = current_layout["rows"]
-    cols = current_layout["cols"]
-    cells = current_layout["cells"]
-    x_min, y_min, x_max, y_max = cells[lo_group]
-    width = cols[x_min + 1] - cols[x_min]
-    new_cells = [c for c in cells if c[2] <= x_min] \
-        + [[c[0]-1, c[1], c[2]-1, c[3]] for c in cells if c[0] >= x_max] 
-    
-    if sym_side == "right":
-        new_cols = [c / (1-width) for c in cols if c < 1 - width] \
-                + [c for c in cols if c > 1 - width ]
-    elif sym_side == "left":
-        new_cols = [c for c in cols if c < width ] \
-                + [(c - width) / (1-width) for c in cols if c >  width ]
-    else:
-        return None
-
-    return {"cols": new_cols, "rows": rows, "cells": new_cells}
-
-# --------------------------------------------------------------------------#
-#                                                                           #
-#                          Intermediate functions                           #
-#                                                                           #
-# --------------------------------------------------------------------------#
-
-
-# --------------------------
-
 def create_outline_view(window):
+
     active_view = window.active_view()
     view = window.new_file()
     view.set_syntax_file('Packages/LaTeXOutline/latexoutline.sublime-syntax')
@@ -239,8 +529,33 @@ def arrange_layout(view, side):
 
 # --------------------------
 
+def reduce_layout(window, lo_view, lo_group, sym_side):
+    '''Determine the new layout when closing LO'''
+
+    current_layout = window.layout()
+    rows = current_layout["rows"]
+    cols = current_layout["cols"]
+    cells = current_layout["cells"]
+    x_min, y_min, x_max, y_max = cells[lo_group]
+    width = cols[x_min + 1] - cols[x_min]
+    new_cells = [c for c in cells if c[2] <= x_min] \
+        + [[c[0]-1, c[1], c[2]-1, c[3]] for c in cells if c[0] >= x_max] 
+    
+    if sym_side == "right":
+        new_cols = [c / (1-width) for c in cols if c < 1 - width] \
+                + [c for c in cols if c > 1 - width ]
+    elif sym_side == "left":
+        new_cols = [c for c in cols if c < width ] \
+                + [(c - width) / (1-width) for c in cols if c >  width ]
+    else:
+        return None
+
+    return {"cols": new_cols, "rows": rows, "cells": new_cells}
+
+# --------------------------
+
 def calc_width(view):
-    ''' Return float width, which must be 0.0 < width < 1.0 '''
+    ''' Return float width, which must be 0.0 < width < 1.0'''
     width = view.settings().get('outline_width', 0.3)
     if isinstance(width, float) and width > 0 and width <1:
         width = round(width, 2) + 0.00001
@@ -280,153 +595,16 @@ def get_sidebar_status(window):
 
 # --------------------------
 
-def filter_and_decorate_symlist(unfiltered_symlist, outline_type, path):
-    '''
-    Filters the symlist to only show sections and labels
-    Prepares their presentation in the LO view, put it in the 'symlist' setting
-    '''
-    lo_settings = sublime.load_settings('latexoutline.sublime-settings')
-    show_sections = lo_settings.get('show_section_numbers')
-
-    if outline_type == "toc":
-        pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*'
-        filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
-    else:
-        pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*|[^\\].*'
-        filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
-        
-    part_pattern = re.compile(r"^Part")
-    chap_pattern = re.compile(r"^Chapter:")
-    
-    shift = 0
-    if any(part_pattern.search(b) for _, b in filtered_symlist):
-        shift = 2
-    elif any(chap_pattern.search(b) for _, b in filtered_symlist):
-        shift = 1
-
-    prefix = {
-    "part" : lo_chars['part'] + ' ',
-    "chapter" : ' ' + lo_chars['chapter'] + ' ' if shift==2 else lo_chars['chapter'] + ' ',
-    "section" : ' ' * shift + lo_chars['section'] + ' ',
-    "subsection" : ' ' * (shift + 1) + lo_chars['subsection'] + ' ',
-    "subsubsection" : ' ' * (shift + 2) + lo_chars['subsubsection'] + ' ',
-    "paragraph" : ' ' * (shift + 3) + lo_chars['paragraph'] + ' ',
-    "frametitle" : lo_chars['frametitle'] + ' ',
-    "label" : '  ' + lo_chars['label'],
-    "copy" : ' ' + lo_chars['copy'], # + ' ',
-    "takealook" : ' ' + lo_chars['takealook'] + ' ',
-    }
-
-    aux_data = get_aux_file_data(path)
-    
-    sym_list = []
-    n=0
-    for item in filtered_symlist[:]:
-        rgn = item[0]
-        sym = re.sub(r'\n', ' ', item[1])
-
-        # Get the ST symbol entry type and content
-        pattern = (
-            r'^(Part\*?|Chapter\*?|Section\*?|Subsection\*?|'
-            r'Subsubsection\*?|Paragraph\*?|Frametitle): (.+)'
-        )
-        match = re.match(pattern, sym)
-        if match:
-            type = match.group(1).lower()
-            true_sym = match.group(2)
-        else:
-           type = "label"
-           true_sym = sym
-        
-        # Find the references of sections
-        ref = None
-        if show_sections and type != "label" and aux_data:
-            ts = normalize_for_comparison(true_sym)
-            for i, data_item in enumerate(aux_data):
-                # Minimal check, this is not very precise, but should work
-                # in most cases
-                if ts == normalize_for_comparison(data_item['main_content']):
-                    correct_item = aux_data.pop(i)
-                    filtered_symlist.remove(item)
-                    ref = correct_item['reference']
-                    break
-
-        # Creates the content to be displayed
-        if type == "label":
-            if aux_data:
-                ref, name = next(((entry['reference'], entry['entry_type']) for entry in aux_data
-                                    if sym == entry['main_content']), ('',''))
-            if show_sections and ref and name == 'equation':
-                ref = '(' + ref + ')'
-                new_sym = prefix["label"] + ' Eq. ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
-            elif show_sections and ref:
-                new_sym = prefix["label"] + ' Ref. ' + ref + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}'
-            else:
-                new_sym = prefix["label"] + true_sym + prefix["copy"] + prefix["takealook"]
-        else:
-            simple_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', true_sym)
-            simple_sym = re.sub(r'\\label\{[^\}]*\}\s*', '', simple_sym)
-            simple_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', simple_sym)
-            simple_sym = re.sub(r'\s*~\s*', r' ', simple_sym)
-            if '*' in type:
-                new_sym = prefix[type[:-1]] + '* ' + simple_sym + prefix["takealook"]
-            elif ref:
-                new_sym = prefix[type] + ref + ' ' + simple_sym + prefix["takealook"]
-            else:
-                new_sym = prefix[type] + simple_sym + prefix["takealook"]
-
-            new_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', new_sym)
-            new_sym = re.sub(r'\\label\{[^\}]*\}\s*', '', new_sym)
-            new_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', new_sym)
-            new_sym = re.sub(r'\s*~\s*', r' ', new_sym)
-        # Creates the entry of the generated symbol list
-        sym_list.append(
-            {"region": (rgn.a, rgn.b),
-             "type": type,
-             "content": sym,
-             "fancy_content": new_sym,
-             "ref": ref}
-            )
-    
-    # Last chance
-    refless_items = [sym for sym in sym_list if sym["type"] != "label" and ref is None]
-
-    return sym_list
-
-# --------------------------
-
-def get_st_symbols(view, outline_type):
+def get_st_symbols(view):
     '''
     Ask ST for the symbols list and apply a first filter according 
     to the chosen outline type
     '''
-    if outline_type == "toc":
-        unfiltered_st_symlist = [
-            (v.region, v.name) for v in view.symbol_regions() if v.kind[1] == 'f'
-        ]
-    else:
-        unfiltered_st_symlist = [
-            (v.region, v.name) for v in view.symbol_regions()
-            if v.kind[1] == 'f' or v.kind[1] == 'l'
-        ]
+    unfiltered_st_symlist = [
+        (v.region, v.name) for v in view.symbol_regions()
+        if v.kind[1] == 'f' or v.kind[1] == 'l'
+    ]
     return unfiltered_st_symlist
-
-# --------------------------
-
-def binary_search(array, x):
-    '''
-    Given a sorted array, returns the location of x if inserted into the array
-    '''
-    low = 0
-    high = len(array) - 1
-    mid = 0
-    while low < high:
-        mid = (high + low) // 2
-        if array[mid] <= x:
-            low = mid + 1
-        else:
-            high = mid
-    return low
 
 # --------------------------
 
@@ -445,28 +623,41 @@ def get_aux_file_data(path):
            
 # --------------------------
 
-def refresh_regions(lo_view, active_view, outline_type):
+def extract_from_sym(item):
+    rgn = item[0]
+    sym = re.sub(r'\n', ' ', item[1])
+
+    # Get the ST symbol entry type and content
+    pattern = (
+        r'^(Part\*?|Chapter\*?|Section\*?|Subsection\*?|'
+        r'Subsubsection\*?|Paragraph\*?|Frametitle): (.+)'
+    )
+    match = re.match(pattern, sym)
+    if match:
+        type = match.group(1).lower()
+        true_sym = match.group(2)
+    else:
+       type = "label"
+       true_sym = sym
+
+    return rgn, sym, type, true_sym
+
+# --------------------------
+
+def binary_search(array, x):
     '''
-    Merely refresh the regions in the symlist setting
+    Given a sorted array, returns the location of x if inserted into the array
     '''
-    sym_list = lo_view.settings().get('symlist')
-    unfiltered_st_symlist = get_st_symbols(active_view, outline_type)
-
-    first=None
-    new_sym_list = sym_list
-    for item in sym_list:
-        key = item["content"]
-        for i, (x, y) in enumerate(unfiltered_st_symlist):
-            if y == key:
-                first = unfiltered_st_symlist.pop(i)
-                break      
-
-        if first:
-            region = first[0]
-            item["region"] = (region.a, region.b)
-
-    lo_view.settings().set('symlist', new_sym_list)
-    return 
+    low = 0
+    high = len(array) - 1
+    mid = 0
+    while low < high:
+        mid = (high + low) // 2
+        if array[mid] <= x:
+            low = mid + 1
+        else:
+            high = mid
+    return low
 
 # --------------------------
 

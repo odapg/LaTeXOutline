@@ -1,28 +1,28 @@
 [
-// Copy these  lines to your User keymap and uncomment them to use the shortkeys 
-//
-// outline_type: "toc" toggles the table of contents
-//               "full" toggles the table of contents and labels view
-//               "both" switches between "toc" and "full"
-// side: "left" or "right"
-// close_on_repeated_use: true or false
+// Copy these lines to your User keymap and uncomment them to use the shortkeys 
 
-    { "keys": ["ctrl+j", "a"], "command": "latex_outline",
-        "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-        "args": {"side": "left", "outline_type": "both", "close_on_repeated_use": true},
-    },
-    { "keys": ["ctrl+j", "e"], "command": "latex_outline",
-        "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-        "args": {"side": "right", "outline_type": "both", "close_on_repeated_use": false}
-    },
-    { "keys": ["ctrl+j", "z"], "command": "latex_outline_close_sidebar"},
+// // outline_type: "toc" toggles the table of contents
+// //               "full" toggles the table of contents and labels view
+// //               "both" switches between "toc" and "full"
+// // side: "left" or "right"
+// // close_on_repeated_use: true or false
 
-// Uncomment the lines below to neutralize the ["ctrl+j", "a"] and ["ctrl+j", "e"]
-// shortcuts outside of LaTeX files
-    { "keys": ["ctrl+j", "a"], "command": "noop",
-        "context": [{ "key": "selector", "operator": "not_equal", "operand": "text.tex.latex" }],
-    },
-    { "keys": ["ctrl+j", "e"], "command": "noop",
-        "context": [{ "key": "selector", "operator": "not_equal", "operand": "text.tex.latex" }],
-    },
+//     { "keys": ["ctrl+j", "a"], "command": "latex_outline",
+//         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
+//         "args": {"side": "left", "outline_type": "full", "close_on_repeated_use": true},
+//     },
+//     { "keys": ["ctrl+j", "e"], "command": "latex_outline",
+//         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
+//         "args": {"side": "right", "outline_type": "both", "close_on_repeated_use": false}
+//     },
+//     { "keys": ["ctrl+j", "z"], "command": "latex_outline_close_sidebar"},
+
+// // Uncomment the lines below to neutralize the ["ctrl+j", "a"] and ["ctrl+j", "e"]
+// // shortcuts outside of LaTeX files
+//     { "keys": ["ctrl+j", "a"], "command": "noop",
+//         "context": [{ "key": "selector", "operator": "not_equal", "operand": "text.tex.latex" }],
+//     },
+//     { "keys": ["ctrl+j", "e"], "command": "noop",
+//         "context": [{ "key": "selector", "operator": "not_equal", "operand": "text.tex.latex" }],
+//     },
 ]
