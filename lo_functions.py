@@ -97,6 +97,7 @@ def fill_symlist(unfiltered_symlist, path, view):
             ref, is_equation = get_ref(true_sym, type, aux_data)
         else:
             ref = None
+            is_equation = None
 
         fancy_content = new_lo_line(true_sym, ref, type, is_equation=is_equation, 
                                     show_ref_nb=show_ref_nb, shift=shift)
@@ -372,23 +373,43 @@ def light_refresh(lo_view, active_view, outline_type):
     '''
     Refresh the regions, add new/remove old entries
     '''
-    sym_list = lo_view.settings().get('symlist')
+    symlist = lo_view.settings().get('symlist')
     unfiltered_st_symlist = get_st_symbols(active_view)
 
-    first=None
-    for item in sym_list:
-        key = item["content"]
-        for i, (x, y) in enumerate(unfiltered_st_symlist):
-            if y == key:
-                first = unfiltered_st_symlist.pop(i)
-                break      
+    shift = 0
+    if "part" in [sym["type"] for sym in symlist]:
+        shift = 2
+    elif "chapter" in [sym["type"] for sym in symlist]:
+        shift = 1
 
-        if first:
-            region = first[0]
-            item["region"] = (region.a, region.b)
+    new_symlist = []
+    for sym in unfiltered_st_symlist:
+        key = re.sub(r'\n', ' ', sym[1])
+        item = {}
+        key_unfound = True
+        for i in range(len(symlist)):
+            if key == symlist[i]["content"]:
+                item=symlist.pop(i)
+                key_unfound = False
+                break
 
-    lo_view.settings().set('symlist', sym_list)
-    return 
+        if key_unfound:
+            rgn, sym, type, true_sym = extract_from_sym(sym)
+            fancy_content = new_lo_line(true_sym, None, type, is_equation=False, 
+                                    show_ref_nb=False, shift=shift)
+            item = {"region": (rgn.a, rgn.b),
+             "type": type,
+             "content": sym,
+             "truesym": true_sym,
+             "is_equation": None,
+             "fancy_content": fancy_content,
+             "ref": "",
+             "env_type": ""}
+
+        new_symlist.append(item)
+        
+    lo_view.settings().set('symlist', new_symlist)
+    return new_symlist
 
 
 

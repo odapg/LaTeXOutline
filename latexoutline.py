@@ -190,12 +190,13 @@ class LatexOutlineEventHandler(EventListener):
                 lo_view.settings().set('current_file', view.file_name())
 
         # Refreshes the data gathered from the .aux file
-        path = view.file_name()
-        aux_data = get_aux_file_data(path)
-        lo_view.settings().set('aux_data', aux_data)
+        # path = view.file_name()
+        # aux_data = get_aux_file_data(path)
+        # lo_view.settings().set('aux_data', aux_data)
 
         outline_type = lo_view.settings().get('current_outline_type')
-        refresh_lo_view(lo_view, view.file_name(), view, outline_type)
+        sym_list = light_refresh(lo_view, view, outline_type)
+        fill_sidebar(lo_view, sym_list, outline_type)
         sync_lo_view()
 
 # ------- 
@@ -233,6 +234,7 @@ class LatexOutlineEventHandler(EventListener):
                 symlist = [sym for sym in full_symlist if sym["type"] != "label"]
             else:
                 symlist = full_symlist
+
             # Get the region corresponding to the selected item
             if not symlist or row is None:
                 return None
@@ -264,12 +266,10 @@ class LatexOutlineEventHandler(EventListener):
 
             # otherwise, go to the corresponding region or copy the section label
             # if the bullet is pressed
-
             if 'bullet' in sel_scope:
                 copy_label(active_view, region)
             else:
-                goto_region(active_view, region)
-                # sync_lo_view()              
+                goto_region(active_view, region)          
 
 # ------- 
 # Arranges the layout when one closes the outline manually
