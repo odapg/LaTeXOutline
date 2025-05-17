@@ -221,7 +221,7 @@ def get_ref(true_sym, type, aux_data):
     # Labels
     if type == "label":
         ref = next((entry['reference'] for entry in aux_data
-                                if true_sym == entry['main_content']), ('',''))
+                                if true_sym == entry['main_content']), '*')
     # Sections
     else:
         ts = normalize_for_comparison(true_sym)
