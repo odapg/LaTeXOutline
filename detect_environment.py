@@ -9,11 +9,15 @@ import re
 import itertools
 import bisect
 
+# -------------------------------------------------
+
 begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
 end_re = r"\\end\{([^\}]*)\}"
 # compile the begin_re (findall does not work if its compiled)
 begin_re = re.compile(begin_re)
 end_re = re.compile(end_re)
+
+# -------------------------------------------------
 
 def _find_env_regions(view, pos, pairs):
     """returns the regions corresponding to nearest matching environments"""
@@ -54,18 +58,11 @@ def _find_env_regions(view, pos, pairs):
 
     return new_regions
 
+# ------------------------------
+
 class NoEnvError(Exception):
     pass
 
-
-def _get_closest_section(sec_before):
-    """returns the closest \\section before"""
-    sec_iter = reversed(sec_before)
-    try:
-        b = next(sec_iter)
-    except:
-        raise NoEnvError("No section detected")
-    return b
 
 def _get_closest_begin(begin_before, end_before):
     """returns the closest \\begin, that is open"""
@@ -84,6 +81,7 @@ def _get_closest_begin(begin_before, end_before):
             break
     return b
 
+# ------------------------------
 
 def _get_closest_end(end_after, begin_after):
     """returns the closest \\end, that is open"""
@@ -102,6 +100,7 @@ def _get_closest_end(end_after, begin_after):
             break
     return e
 
+# ------------------------------
 
 def filter_non_comment_regions(view, regions):
     comment_line_re = re.compile(r"\s*%.*")
@@ -109,6 +108,8 @@ def filter_non_comment_regions(view, regions):
         line_str = view.substr(view.line(reg))
         return comment_line_re.match(line_str) is not None
     return [r for r in regions if not is_comment(r)]
+
+# ------------------------------
 
 def _extract_env_name(view, region, is_begin):
     s = view.substr(region)
@@ -119,6 +120,8 @@ def _extract_env_name(view, region, is_begin):
     if m:
         return m.group(1)
     return ""
+
+# ------------------------------
 
 def _find_surrounding_pair(view, pairs, pos):
     matching_pairs = []
@@ -133,6 +136,8 @@ def _find_surrounding_pair(view, pairs, pos):
 
     matching_pairs.sort(key=lambda x: -x[2])
     return matching_pairs[0][0], matching_pairs[0][1]
+
+# ------------------------------
 
 def _match_envs(begins, ends):
     """Match begin/end into a stack (one pass)"""

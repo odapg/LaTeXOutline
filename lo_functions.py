@@ -257,12 +257,16 @@ def new_lo_line(true_sym, ref, type, is_equation=False,
     
     # Labels
     if type == "label":
-        if show_ref_nb and ref and is_equation:
-            new_sym_line = (prefix["label"] + 'Eq. (' + ref +')'
-                        + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
-        elif show_ref_nb and ref:
-            new_sym_line = (prefix["label"] + env_type + ' ' + ref 
-                + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
+        if show_ref_nb:
+            if ref and is_equation:
+                new_sym_line = (prefix["label"] + 'Eq. (' + ref +')'
+                            + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
+            elif ref:
+                new_sym_line = (prefix["label"] + env_type + ' ' + ref 
+                    + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
+            else:
+                new_sym_line = (prefix["label"] + env_type + ' *' 
+                    + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
         elif show_env_names:
             new_sym_line = (prefix["label"] + env_type + ' ' + prefix["copy"] 
                 + prefix["takealook"] + '{' + true_sym + '}')
@@ -274,7 +278,6 @@ def new_lo_line(true_sym, ref, type, is_equation=False,
         simple_sym = re.sub(r'\\label\{[^\}]*\}\s*', '', simple_sym)
         simple_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', simple_sym)
         simple_sym = re.sub(r'\s*~\s*', r' ', simple_sym)
-
         if '*' in type:
             new_sym_line = prefix[type[:-1]] + '* ' + simple_sym + prefix["takealook"]
         elif show_ref_nb and ref:
