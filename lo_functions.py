@@ -9,7 +9,7 @@ import re
 import unicodedata
 from sublime import Region
 from .parse_aux import parse_aux_file
-from .detect_environment import _find_env_regions
+from .detect_environment import _find_env_regions, filter_non_comment_regions, _match_envs
 import time
 import threading
 
@@ -318,16 +318,18 @@ class GetEnvNamesTask(threading.Thread):
                 r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
                 r'subsubsection\*?|paragraph\*?|frametitle)'
             )
-        begins = view.find_all(begin_re, sublime.IGNORECASE)
-        ends = view.find_all(end_re, sublime.IGNORECASE)
-        secs = view.find_all(sec_re, sublime.IGNORECASE)
-        
+        st_begins = view.find_all(begin_re, sublime.IGNORECASE)
+        st_ends = view.find_all(end_re, sublime.IGNORECASE)
+        begins = filter_non_comment_regions(view, st_begins)
+        ends = filter_non_comment_regions(view, st_ends)
+        pairs = _match_envs(begins, ends)
+
         for i in range(len(symlist)):
             sym = symlist[i]
             if sym["type"] != "label" or sym["is_equation"]:
                 pass
             rgn = sym["region"]
-            env_regions = _find_env_regions(view, rgn[0], begins, ends, secs)
+            env_regions = _find_env_regions(view, rgn[0], pairs)
             if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
                 env_type = "↪ Ref."
             else:

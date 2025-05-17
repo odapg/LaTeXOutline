@@ -9,8 +9,8 @@
 
   // true: show the environments names (Theorem, Lemma, etc.)
   // false: only present the references
-  // It is a bit slow and environments names can appear slightly later, 
-  // since the process is run in the background
+  // It can be a bit slow on large files and old systems: environments names can appear
+  // a bit later in this case, since the process is run in the background
   "show_environments_names": true,
 
   // true: latexoutline will use the same color scheme as current file

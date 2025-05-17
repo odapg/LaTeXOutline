@@ -9,7 +9,7 @@
 
     { "keys": ["ctrl+j", "a"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-        "args": {"side": "left", "outline_type": "both", "close_on_repeated_use": true},
+        "args": {"side": "left", "outline_type": "full", "close_on_repeated_use": true},
     },
     { "keys": ["ctrl+j", "e"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
