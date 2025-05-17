@@ -101,7 +101,8 @@ def fill_symlist(unfiltered_symlist, path, view):
         is_equation = "math.block.be.latex" in view.scope_name(rgn.begin())
 
         fancy_content = new_lo_line(true_sym, ref, type, is_equation=is_equation, 
-                                    show_ref_nb=show_ref_nb, shift=shift)
+                                    show_ref_nb=show_ref_nb, 
+                                    show_env_names=show_env_names, shift=shift)
 
         # Creates the entry of the generated symbol list
         sym_list.append(
@@ -238,7 +239,7 @@ def get_ref(true_sym, type, aux_data):
 # --------------------------
 
 def new_lo_line(true_sym, ref, type, is_equation=False,
-                 env_type="Ref.", show_ref_nb=False, shift=0):
+                 env_type="Ref.", show_ref_nb=False, show_env_names=False, shift=0):
     '''Creates the content to be displayed'''
     
     prefix = {
@@ -262,6 +263,9 @@ def new_lo_line(true_sym, ref, type, is_equation=False,
         elif show_ref_nb and ref:
             new_sym_line = (prefix["label"] + env_type + ' ' + ref 
                 + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
+        elif show_env_names:
+            new_sym_line = (prefix["label"] + env_type + ' ' + prefix["copy"] 
+                + prefix["takealook"] + '{' + true_sym + '}')
         else:
             new_sym_line = prefix["label"] + true_sym + prefix["copy"] + prefix["takealook"]
     # Sections
@@ -270,9 +274,10 @@ def new_lo_line(true_sym, ref, type, is_equation=False,
         simple_sym = re.sub(r'\\label\{[^\}]*\}\s*', '', simple_sym)
         simple_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', simple_sym)
         simple_sym = re.sub(r'\s*~\s*', r' ', simple_sym)
+
         if '*' in type:
             new_sym_line = prefix[type[:-1]] + '* ' + simple_sym + prefix["takealook"]
-        elif ref:
+        elif show_ref_nb and ref:
             new_sym_line = prefix[type] + ref + ' ' + simple_sym + prefix["takealook"]
         else:
             new_sym_line = prefix[type] + simple_sym + prefix["takealook"]
@@ -298,6 +303,8 @@ class GetEnvNamesTask(threading.Thread):
         if not lo_view:
             return
         symlist = lo_view.settings().get('symlist')
+        lo_settings = sublime.load_settings('latexoutline.sublime-settings')
+        show_env_names = lo_settings.get('show_environments_names')
 
         shift = 0
         if "part" in [sym["type"] for sym in symlist]:
@@ -332,6 +339,7 @@ class GetEnvNamesTask(threading.Thread):
                                              sym["is_equation"],
                                              env_type=env_type,
                                              show_ref_nb=True,
+                                             show_env_names = show_env_names,
                                              shift=shift)
         # If it changed in the meantime
         lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
@@ -371,6 +379,8 @@ def light_refresh(lo_view, active_view, outline_type):
     Refresh the regions, add new/remove old entries
     '''
     symlist = lo_view.settings().get('symlist')
+    lo_settings = sublime.load_settings('latexoutline.sublime-settings')
+    show_ref_nb = lo_settings.get('show_ref_numbers')
     unfiltered_st_symlist = get_st_symbols(active_view)
     st_symlist = [sym for sym in unfiltered_st_symlist if not sym[1].startswith('\\')]
     print(st_symlist)
@@ -395,11 +405,11 @@ def light_refresh(lo_view, active_view, outline_type):
             rgn, sym, type, true_sym = extract_from_sym(sym)
             is_equation = "math.block.be.latex" in active_view.scope_name(rgn.begin())
             fancy_content = new_lo_line(true_sym, "…", type, is_equation, 
-                                    show_ref_nb=True, shift=shift)
+                                    show_ref_nb=show_ref_nb, 
+                                    show_env_names=show_env_names, shift=shift)
             item = {"region": (rgn.a, rgn.b),
              "type": type,
              "content": sym,
-             "truesym": true_sym,
              "is_equation": is_equation,
              "fancy_content": fancy_content,
              "ref": "",

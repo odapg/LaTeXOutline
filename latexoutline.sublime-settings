@@ -9,7 +9,6 @@
 
   // true: show the environments names (Theorem, Lemma, etc.) -- a bit slower
   // false: only present the reference
-  // This requires "show_ref_numbers" to be true
   "show_environments_names": true,
 
   // true: latexoutline will use the same color scheme as current file
