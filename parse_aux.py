@@ -56,12 +56,12 @@ def parse_newlabel_line(line):
                 type_main = type_field
 
         return {
-            'source': 'newlabel',
+            # 'source': 'newlabel',
             'main_content': label_name,
             'reference': fields[0] if len(fields) > 0 else None,
             # 'page_number': fields[1] if len(fields) > 1 else None,
             # 'hyper_anchor': fields[2] if len(fields) > 2 else None,
-            'entry_type': type_main,
+            # 'entry_type': type_main,
             # 'num': type_sub,
             # 'extra': fields[4] if len(fields) > 4 else None,
         }
@@ -135,9 +135,9 @@ def parse_writefile_line(line):
 
 
             return {
-                'source': 'writefile',
-                'type': file_type,
-                'entry_type': entry_type,
+                # 'source': 'writefile',
+                # 'type': file_type,
+                # 'entry_type': entry_type,
                 'reference': entry_number,
                 'main_content': entry_title,
                 # 'page_number': page_number

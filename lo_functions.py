@@ -94,10 +94,11 @@ def fill_symlist(unfiltered_symlist, path, view):
         rgn, sym, type, true_sym = extract_from_sym(item)
 
         if show_ref_nb and aux_data:
-            ref, is_equation = get_ref(true_sym, type, aux_data)
+            ref= get_ref(true_sym, type, aux_data)
         else:
             ref = None
-            is_equation = None
+
+        is_equation = "math.block.be.latex" in view.scope_name(rgn.begin())
 
         fancy_content = new_lo_line(true_sym, ref, type, is_equation=is_equation, 
                                     show_ref_nb=show_ref_nb, shift=shift)
@@ -215,14 +216,11 @@ def get_ref(true_sym, type, aux_data):
     '''Obtains the reference of the entry'''
     
     ref = None
-    is_equation = False
 
     # Labels
     if type == "label":
-        ref, name = next(((entry['reference'], entry['entry_type']) for entry in aux_data
+        ref = next((entry['reference'] for entry in aux_data
                                 if true_sym == entry['main_content']), ('',''))
-        if ref and name == 'equation':
-            is_equation = True
     # Sections
     else:
         ts = normalize_for_comparison(true_sym)
@@ -234,7 +232,7 @@ def get_ref(true_sym, type, aux_data):
                 ref = correct_item['reference']
                 break
 
-    return ref, is_equation
+    return ref
 
 
 # --------------------------
@@ -262,7 +260,6 @@ def new_lo_line(true_sym, ref, type, is_equation=False,
             new_sym_line = (prefix["label"] + 'Eq. (' + ref +')'
                         + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
         elif show_ref_nb and ref:
-            # env_type = "Ref."
             new_sym_line = (prefix["label"] + env_type + ' ' + ref 
                 + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
         else:
@@ -375,7 +372,8 @@ def light_refresh(lo_view, active_view, outline_type):
     '''
     symlist = lo_view.settings().get('symlist')
     unfiltered_st_symlist = get_st_symbols(active_view)
-
+    st_symlist = [sym for sym in unfiltered_st_symlist if not sym[1].startswith('\\')]
+    print(st_symlist)
     shift = 0
     if "part" in [sym["type"] for sym in symlist]:
         shift = 2
@@ -383,7 +381,7 @@ def light_refresh(lo_view, active_view, outline_type):
         shift = 1
 
     new_symlist = []
-    for sym in unfiltered_st_symlist:
+    for sym in st_symlist:
         key = re.sub(r'\n', ' ', sym[1])
         item = {}
         key_unfound = True
@@ -395,13 +393,14 @@ def light_refresh(lo_view, active_view, outline_type):
 
         if key_unfound:
             rgn, sym, type, true_sym = extract_from_sym(sym)
-            fancy_content = new_lo_line(true_sym, None, type, is_equation=False, 
-                                    show_ref_nb=False, shift=shift)
+            is_equation = "math.block.be.latex" in active_view.scope_name(rgn.begin())
+            fancy_content = new_lo_line(true_sym, "…", type, is_equation, 
+                                    show_ref_nb=True, shift=shift)
             item = {"region": (rgn.a, rgn.b),
              "type": type,
              "content": sym,
              "truesym": true_sym,
-             "is_equation": None,
+             "is_equation": is_equation,
              "fancy_content": fancy_content,
              "ref": "",
              "env_type": ""}
