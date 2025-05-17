@@ -426,7 +426,7 @@ def light_refresh(lo_view, active_view, outline_type):
 
 def goto_region(active_view, region_position):
     if active_view and region_position:
-        r = Region(region_position[0], region_position[1])
+        r = Region(region_position[0], region_position[0])
         active_view.show_at_center(r)
         active_view.sel().clear()
         active_view.sel().add(r)

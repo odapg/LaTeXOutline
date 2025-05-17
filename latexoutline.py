@@ -196,8 +196,7 @@ class LatexOutlineEventHandler(EventListener):
         sync_lo_view()
 
 # ------- 
-# When the user clicks the outline,
-# go to the corresponding place in the LaTeX file
+# When the user clicks the outline, go to the corresponding place in the LaTeX file
 # or copy the label when asked
 
     def on_selection_modified(self, view):
