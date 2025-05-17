@@ -49,6 +49,7 @@ class LatexOutlineCommand(WindowCommand):
                 
                 show_outline(self.window, side=side, outline_type=new_outline_type, path=path)
                 lo_view, lo_group = get_sidebar_view_and_group(self.window)
+                lo_view.settings().set('symlist', current_symlist)
                 fill_sidebar(lo_view, current_symlist, new_outline_type)
 
             else:

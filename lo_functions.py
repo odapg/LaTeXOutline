@@ -112,17 +112,19 @@ def fill_symlist(unfiltered_symlist, path, view):
         else:
             ref = None
 
-        fancy_content = new_lo_line(true_sym, ref, is_equation, type, show_ref_nb, shift)
+        fancy_content = new_lo_line(true_sym, ref, type, is_equation=is_equation, 
+                                    show_ref_nb=show_ref_nb, shift=shift)
 
         # Creates the entry of the generated symbol list
         sym_list.append(
             {"region": (rgn.a, rgn.b),
              "type": type,
              "content": sym,
-             "ref": ref,
+             "truesym": true_sym,
              "is_equation": is_equation,
              "fancy_content": fancy_content,
-             "ref": ref}
+             "ref": ref,
+             "env_type": ""}
             )
 
     # Getting environment names can take some time; better let it in the background
@@ -160,7 +162,7 @@ def refresh_lo_view(lo_view, path, view, outline_type):
 def fill_sidebar(lo_view, sym_list, outline_type):
     '''Fills the contents of the outline view'''
     lo_view.run_command('latex_outline_fill_sidebar', 
-                                {'symlist': sym_list,'outline_type': outline_type})
+                                {'symlist': sym_list, 'outline_type': outline_type})
 
 # --------------------------
 
@@ -250,7 +252,8 @@ def get_ref(true_sym, type, aux_data):
 
 # --------------------------
 
-def new_lo_line(true_sym, ref, is_equation, type, show_ref_nb, shift):
+def new_lo_line(true_sym, ref, type, is_equation=False,
+                 env_type="Ref.", show_ref_nb=False, shift=0):
     '''Creates the content to be displayed'''
     
     prefix = {
@@ -272,7 +275,7 @@ def new_lo_line(true_sym, ref, is_equation, type, show_ref_nb, shift):
             new_sym_line = (prefix["label"] + 'Eq. (' + ref +')'
                         + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
         elif show_ref_nb and ref:
-            env_type = "Ref."
+            # env_type = "Ref."
             new_sym_line = (prefix["label"] + env_type + ' ' + ref 
                 + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
         else:
@@ -305,35 +308,54 @@ class GetEnvNamesTask(threading.Thread):
         self.active_view = active_view
 
     def run(self):
-        print("GetEnvNames started...")
-        print(self.active_view)
-        time.sleep(5)
-        print("GetEnvNames finished.")
+        view = self.active_view
+
+        lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
+        if not lo_view:
+            return
+        symlist = lo_view.settings().get('symlist')
+
+        shift = 0
+        if "part" in [sym["type"] for sym in symlist]:
+            shift = 2
+        elif "chapter" in [sym["type"] for sym in symlist]:
+            shift = 1
+
+        begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
+        end_re = r"\\end\{([^\}]*)\}"
+        sec_re = (
+                r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
+                r'subsubsection\*?|paragraph\*?|frametitle)'
+            )
+        begins = view.find_all(begin_re, sublime.IGNORECASE)
+        ends = view.find_all(end_re, sublime.IGNORECASE)
+        secs = view.find_all(sec_re, sublime.IGNORECASE)
         
-
-    # Gets the \begins and \ends once for all to be used with _find_env_regions
-    # if show_env_names:
-    #     begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
-    #     end_re = r"\\end\{([^\}]*)\}"
-    #     sec_re = (
-    #             r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
-    #             r'subsubsection\*?|paragraph\*?|frametitle)'
-    #         )
-    #     begins = view.find_all(begin_re, sublime.IGNORECASE)
-    #     ends = view.find_all(end_re, sublime.IGNORECASE)
-    #     secs = view.find_all(sec_re, sublime.IGNORECASE)
-
-
-    # Looks for the type of environment corresponding to the label
-            # if show_env_names: 
-            #     env_type = "Ref."
-            #     # env_regions = _find_env_regions(view, rgn.a, begins, ends, secs)
-            #     # if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
-            #     #     env_type = "↪ Ref."
-            #     # else:
-            #     #     env_type = view.substr(env_regions[0])
-            #     #     env_type = env_type.title()
-            # else:
+        for i in range(len(symlist)):
+            sym = symlist[i]
+            if sym["type"] != "label" or sym["is_equation"]:
+                pass
+            rgn = sym["region"]
+            env_regions = _find_env_regions(view, rgn[0], begins, ends, secs)
+            if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
+                env_type = "↪ Ref."
+            else:
+                env_type = view.substr(env_regions[0])
+                env_type = env_type.title()
+            symlist[i]["env_type"] = env_type
+            symlist[i]["fancy_content"] = new_lo_line(sym["truesym"],
+                                             sym["ref"], sym["type"], 
+                                             sym["is_equation"],
+                                             env_type=env_type,
+                                             show_ref_nb=True,
+                                             shift=shift)
+        # If it changed in the meantime
+        lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
+        if lo_view:
+            lo_view.settings().set('symlist', symlist)
+            outline_type = lo_view.settings().get('current_outline_type')
+            fill_sidebar(lo_view, symlist, outline_type)
+        
 
 # --------------------------
 
@@ -556,7 +578,6 @@ def refresh_regions(lo_view, active_view, outline_type):
     unfiltered_st_symlist = get_st_symbols(active_view)
 
     first=None
-    new_sym_list = sym_list
     for item in sym_list:
         key = item["content"]
         for i, (x, y) in enumerate(unfiltered_st_symlist):
@@ -568,7 +589,7 @@ def refresh_regions(lo_view, active_view, outline_type):
             region = first[0]
             item["region"] = (region.a, region.b)
 
-    lo_view.settings().set('symlist', new_sym_list)
+    lo_view.settings().set('symlist', sym_list)
     return 
 
 # --------------------------
