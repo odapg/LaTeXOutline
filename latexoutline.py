@@ -225,9 +225,21 @@ class LatexOutlineEventHandler(EventListener):
             (row, col) = lo_view.rowcol(lo_view.sel()[0].begin())
             sel_scope = lo_view.scope_name(lo_view.sel()[0].begin())
             
+            # Refresh the regions (only) in the symlist
+            outline_type = lo_view.settings().get('current_outline_type')
+            refresh_regions(lo_view, active_view)
+            full_symlist = lo_view.settings().get('symlist')
+            if outline_type == "toc":
+                symlist = [sym for sym in full_symlist if sym["type"] != "label"]
+            else:
+                symlist = full_symlist
+            # Get the region corresponding to the selected item
+            if not symlist or row is None:
+                return None
+            region = symlist[row]["region"]
+            
             # If the copy symbol ❐ was pressed
             if 'copy' in sel_scope:
-                symlist = lo_view.settings().get('symlist')
                 label = symlist[row]["content"]
                 sublime.set_clipboard(label)
                 sublime.active_window().status_message(
@@ -238,8 +250,6 @@ class LatexOutlineEventHandler(EventListener):
 
             # If the takealook symbol ◎ was pressed
             if 'takealook' in sel_scope:
-                symlist = lo_view.settings().get('symlist')
-                region = symlist[row]["region"]
                 active_view.add_regions(
                     "takealook", 
                     active_view.lines(Region(region[0],region[1])),
@@ -251,26 +261,14 @@ class LatexOutlineEventHandler(EventListener):
                 sublime.active_window().focus_view(active_view)
                 sublime.set_timeout_async(lambda: active_view.erase_regions("takealook"), 5000)
                 return
-            
 
             # otherwise, go to the corresponding region or copy the section label
             # if the bullet is pressed
 
-            # Refresh the regions (only) in the symlist
-            outline_type = lo_view.settings().get('current_outline_type')
-            refresh_regions(lo_view, active_view, outline_type)
-            symlist = lo_view.settings().get('symlist')
-
-            # Get the region corresponding to the selected item
-            if not symlist or row is None:
-                return None
-            region_position = symlist[row]["region"]
-            
-            label_copy = False
             if 'bullet' in sel_scope:
-                copy_label(active_view, region_position)
+                copy_label(active_view, region)
             else:
-                goto_region(active_view, region_position)
+                goto_region(active_view, region)
                 # sync_lo_view()              
 
 # ------- 

@@ -91,21 +91,7 @@ def fill_symlist(unfiltered_symlist, path, view):
     sym_list = []
 
     for item in filtered_symlist:
-        rgn = item[0]
-        sym = re.sub(r'\n', ' ', item[1])
-
-        # Get the ST symbol entry type and content
-        pattern = (
-            r'^(Part\*?|Chapter\*?|Section\*?|Subsection\*?|'
-            r'Subsubsection\*?|Paragraph\*?|Frametitle): (.+)'
-        )
-        match = re.match(pattern, sym)
-        if match:
-            type = match.group(1).lower()
-            true_sym = match.group(2)
-        else:
-           type = "label"
-           true_sym = sym
+        rgn, sym, type, true_sym = extract_from_sym(item)
 
         if show_ref_nb and aux_data:
             ref, is_equation = get_ref(true_sym, type, aux_data)
@@ -194,7 +180,7 @@ def sync_lo_view():
         view = sublime.active_window().active_view()
 
         # Refresh the regions (only) in the current symlist
-        refresh_regions(lo_view, view, outline_type)
+        refresh_regions(lo_view, view)
         settings_sym_list = lo_view.settings().get('symlist')
         if outline_type == "toc":
             sym_list = [item for item in settings_sym_list
@@ -356,6 +342,55 @@ class GetEnvNamesTask(threading.Thread):
             outline_type = lo_view.settings().get('current_outline_type')
             fill_sidebar(lo_view, symlist, outline_type)
         
+# --------------------------
+
+def refresh_regions(lo_view, active_view):
+    '''
+    Merely refresh the regions in the symlist
+    '''
+    sym_list = lo_view.settings().get('symlist')
+    unfiltered_st_symlist = get_st_symbols(active_view)
+
+    for item in sym_list:
+        first=None
+        key = item["content"]
+        for i, (x, y) in enumerate(unfiltered_st_symlist):
+            if re.sub(r'\n', ' ', y) == key:
+                first = unfiltered_st_symlist.pop(i)
+                break      
+
+        if first:
+            region = first[0]
+            item["region"] = (region.a, region.b)
+
+    lo_view.settings().set('symlist', sym_list)
+    return 
+
+# --------------------------
+
+def light_refresh(lo_view, active_view, outline_type):
+    '''
+    Refresh the regions, add new/remove old entries
+    '''
+    sym_list = lo_view.settings().get('symlist')
+    unfiltered_st_symlist = get_st_symbols(active_view)
+
+    first=None
+    for item in sym_list:
+        key = item["content"]
+        for i, (x, y) in enumerate(unfiltered_st_symlist):
+            if y == key:
+                first = unfiltered_st_symlist.pop(i)
+                break      
+
+        if first:
+            region = first[0]
+            item["region"] = (region.a, region.b)
+
+    lo_view.settings().set('symlist', sym_list)
+    return 
+
+
 
 # --------------------------
 
@@ -393,33 +428,8 @@ def copy_label(active_view, region_position):
 
 # --------------------------
 
-def reduce_layout(window, lo_view, lo_group, sym_side):
-    '''Determine the new layout when closing LO'''
-
-    current_layout = window.layout()
-    rows = current_layout["rows"]
-    cols = current_layout["cols"]
-    cells = current_layout["cells"]
-    x_min, y_min, x_max, y_max = cells[lo_group]
-    width = cols[x_min + 1] - cols[x_min]
-    new_cells = [c for c in cells if c[2] <= x_min] \
-        + [[c[0]-1, c[1], c[2]-1, c[3]] for c in cells if c[0] >= x_max] 
-    
-    if sym_side == "right":
-        new_cols = [c / (1-width) for c in cols if c < 1 - width] \
-                + [c for c in cols if c > 1 - width ]
-    elif sym_side == "left":
-        new_cols = [c for c in cols if c < width ] \
-                + [(c - width) / (1-width) for c in cols if c >  width ]
-    else:
-        return None
-
-    return {"cols": new_cols, "rows": rows, "cells": new_cells}
-
-
-# --------------------------
-
 def create_outline_view(window):
+
     active_view = window.active_view()
     view = window.new_file()
     view.set_syntax_file('Packages/LaTeXOutline/latexoutline.sublime-syntax')
@@ -484,6 +494,31 @@ def arrange_layout(view, side):
 
 # --------------------------
 
+def reduce_layout(window, lo_view, lo_group, sym_side):
+    '''Determine the new layout when closing LO'''
+
+    current_layout = window.layout()
+    rows = current_layout["rows"]
+    cols = current_layout["cols"]
+    cells = current_layout["cells"]
+    x_min, y_min, x_max, y_max = cells[lo_group]
+    width = cols[x_min + 1] - cols[x_min]
+    new_cells = [c for c in cells if c[2] <= x_min] \
+        + [[c[0]-1, c[1], c[2]-1, c[3]] for c in cells if c[0] >= x_max] 
+    
+    if sym_side == "right":
+        new_cols = [c / (1-width) for c in cols if c < 1 - width] \
+                + [c for c in cols if c > 1 - width ]
+    elif sym_side == "left":
+        new_cols = [c for c in cols if c < width ] \
+                + [(c - width) / (1-width) for c in cols if c >  width ]
+    else:
+        return None
+
+    return {"cols": new_cols, "rows": rows, "cells": new_cells}
+
+# --------------------------
+
 def calc_width(view):
     ''' Return float width, which must be 0.0 < width < 1.0 '''
     width = view.settings().get('outline_width', 0.3)
@@ -538,23 +573,6 @@ def get_st_symbols(view):
 
 # --------------------------
 
-def binary_search(array, x):
-    '''
-    Given a sorted array, returns the location of x if inserted into the array
-    '''
-    low = 0
-    high = len(array) - 1
-    mid = 0
-    while low < high:
-        mid = (high + low) // 2
-        if array[mid] <= x:
-            low = mid + 1
-        else:
-            high = mid
-    return low
-
-# --------------------------
-
 def get_aux_file_data(path):
     '''
     Given a .tex file, gather information from the .aux file
@@ -570,27 +588,41 @@ def get_aux_file_data(path):
            
 # --------------------------
 
-def refresh_regions(lo_view, active_view, outline_type):
+def extract_from_sym(item):
+    rgn = item[0]
+    sym = re.sub(r'\n', ' ', item[1])
+
+    # Get the ST symbol entry type and content
+    pattern = (
+        r'^(Part\*?|Chapter\*?|Section\*?|Subsection\*?|'
+        r'Subsubsection\*?|Paragraph\*?|Frametitle): (.+)'
+    )
+    match = re.match(pattern, sym)
+    if match:
+        type = match.group(1).lower()
+        true_sym = match.group(2)
+    else:
+       type = "label"
+       true_sym = sym
+
+    return rgn, sym, type, true_sym
+
+# --------------------------
+
+def binary_search(array, x):
     '''
-    Merely refresh the regions in the symlist setting
+    Given a sorted array, returns the location of x if inserted into the array
     '''
-    sym_list = lo_view.settings().get('symlist')
-    unfiltered_st_symlist = get_st_symbols(active_view)
-
-    first=None
-    for item in sym_list:
-        key = item["content"]
-        for i, (x, y) in enumerate(unfiltered_st_symlist):
-            if y == key:
-                first = unfiltered_st_symlist.pop(i)
-                break      
-
-        if first:
-            region = first[0]
-            item["region"] = (region.a, region.b)
-
-    lo_view.settings().set('symlist', sym_list)
-    return 
+    low = 0
+    high = len(array) - 1
+    mid = 0
+    while low < high:
+        mid = (high + low) // 2
+        if array[mid] <= x:
+            low = mid + 1
+        else:
+            high = mid
+    return low
 
 # --------------------------
 
