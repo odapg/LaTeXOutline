@@ -1,5 +1,11 @@
 ## LaTeXOutline for Sublime Text -- Changelog
 
+
+#### Version 2.2
+
+- Gathers environment names (Theorem, Figure, etc.).
+- Small corrections.
+
 #### Version 2.1
 
 - Adds a second outline containing the labels in addition to the table of contents.
@@ -8,7 +14,6 @@
 - Now also considers \section*{...} etc.
 - Corrects a bug occurring when two sections have the same name.
 - Small corrections.
-
 
 #### Version 2.0
 
@@ -23,7 +28,6 @@
 - The LaTeXOutline tab is now kept unchanged when activating a non-LaTeX file (such as a .log one).
 - Important internal rewriting (but a substancial part of the code still comes from [SublimeOutline](https://github.com/warmdev/SublimeOutline) ).
 - LaTeXOutline is now limited to ST4. 
-
 
 #### Version 1.0
 

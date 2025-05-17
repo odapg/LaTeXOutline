@@ -172,7 +172,7 @@ class LatexOutlineEventHandler(EventListener):
                 refresh_lo_view(lo_view, view.file_name(), view, outline_type)
 
 # ------- 
-# Reset the outline when the LaTeX file is saved
+# Partially refresh the outline when the LaTeX file is saved
 
     def on_pre_save(self, view):
         if not get_sidebar_status(view.window()):
@@ -188,11 +188,6 @@ class LatexOutlineEventHandler(EventListener):
         if lo_view != None:
             if lo_view.settings().get('current_file') != view.file_name():
                 lo_view.settings().set('current_file', view.file_name())
-
-        # Refreshes the data gathered from the .aux file
-        # path = view.file_name()
-        # aux_data = get_aux_file_data(path)
-        # lo_view.settings().set('aux_data', aux_data)
 
         outline_type = lo_view.settings().get('current_outline_type')
         sym_list = light_refresh(lo_view, view, outline_type)

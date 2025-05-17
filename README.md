@@ -35,6 +35,10 @@ It only works with *single-file* LaTeX documents.
 
    Click on a section's *bullet* in the LaTeXOutline tab to copy the section's corresponding label in the clipboard. A message is given in the status bar below to indicate if this label has been found.
 
+### Remark
+
+Gathering environment names takes some time and is performed in the background. As a result, they may appear slightly later in the outline (when the corresponding setting is enabled).
+
 ### Known issues
 
 - LaTeXOutline does not work with multiple-files LaTeX projects. The commands `\input{other.tex}` are not taken into account.
@@ -47,4 +51,6 @@ This plugin is licensed under the MIT license. In particular, it is provided "as
 
 ### Acknowledgements
 
-LaTeXOutline is originally a specific adaptation of warmdev's original [SublimeOutline](https://github.com/warmdev/SublimeOutline) to LaTeX files, also using modifications due to vlad-wonderkidstudio, see [SublimeOutline](https://github.com/vlad-wonderkidstudio/SublimeOutline). It still uses a significant part of this code.
+LaTeXOutline is originally a specific adaptation of warmdev's original [SublimeOutline](https://github.com/warmdev/SublimeOutline) to LaTeX files, also using modifications due to vlad-wonderkidstudio, see [SublimeOutline](https://github.com/vlad-wonderkidstudio/SublimeOutline). It still uses an appreciable part of this code.
+LaTeXOutline also borrows code from [LaTeXTools](https://github.com/SublimeText/LaTeXTools).
+

@@ -541,7 +541,7 @@ def reduce_layout(window, lo_view, lo_group, sym_side):
 # --------------------------
 
 def calc_width(view):
-    ''' Return float width, which must be 0.0 < width < 1.0 '''
+    ''' Return float width, which must be 0.0 < width < 1.0'''
     width = view.settings().get('outline_width', 0.3)
     if isinstance(width, float) and width > 0 and width <1:
         width = round(width, 2) + 0.00001
