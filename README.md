@@ -35,14 +35,15 @@ It only works with *single-file* LaTeX documents.
 
    Click on a section's *bullet* in the LaTeXOutline tab to copy the section's corresponding label in the clipboard. A message is given in the status bar below to indicate if this label has been found.
 
-### Remark
+### Remarks
 
-Gathering environment names takes some time and is performed in the background. As a result, they may appear slightly later in the outline (when the corresponding setting is enabled).
+- Sections and labels numbering in the outline relies on the `.aux` file and consequently does not work when it is erased.
+- Gathering environment names may take some time and is performed in the background. As a result, they may appear slightly later in the outline (when the corresponding setting is enabled).
 
 ### Known issues
 
 - LaTeXOutline does not work with multiple-files LaTeX projects. The commands `\input{other.tex}` are not taken into account.
-- Section numbering does not work with the use of the `cleveref` package or the `\texorpdfstring` command in a section. It is likely that many packages interfering with the `.aux` file can create issues as well.
+- Section numbering does not work with the use of the `cleveref` package. It is likely that many packages interfering with the `.aux` file can create issues as well.
 - Spaces or parentheses in labels are not recognized in ST's symbols list and therefore not by LaTeXOutline either.
 
 ### License

@@ -334,7 +334,7 @@ class GetEnvNamesTask(threading.Thread):
             rgn = sym["region"]
             env_regions = _find_env_regions(view, rgn[0], pairs)
             if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
-                env_type = "↪ Ref."
+                env_type = " ↪ Ref."
             else:
                 env_type = view.substr(env_regions[0])
                 env_type = env_type.title()
