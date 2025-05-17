@@ -50,6 +50,7 @@ class LatexOutlineCommand(WindowCommand):
                 show_outline(self.window, side=side, outline_type=new_outline_type, path=path)
                 lo_view, lo_group = get_sidebar_view_and_group(self.window)
                 lo_view.settings().set('symlist', current_symlist)
+                lo_view.settings().set('active_view', self.window.active_view().id())
                 fill_sidebar(lo_view, current_symlist, new_outline_type)
 
             else:
@@ -204,7 +205,6 @@ class LatexOutlineEventHandler(EventListener):
             return
         if view.window().get_view_index(view)[0] == -1:
             return
-
         window = sublime.active_window()
         lo_view = view
 
