@@ -195,6 +195,12 @@ def sync_lo_view():
         range_lows = [view.line(item['region'][0]).begin() for item in sym_list]
         range_sorted = [0] + range_lows[1:len(range_lows)] + [view.size()]
         lo_line = binary_search(range_sorted, point) - 1
+        # Highlight the previous (sub)section rather than the label
+        if outline_type != "toc":
+            for i in range(lo_line, -1, -1):
+                if sym_list[i]["type"] != "label":
+                    lo_line = i
+                    break
         lo_point_start = lo_view.text_point_utf8(lo_line, 0)
         lo_view.show_at_center(lo_point_start, animate=True)
         lo_view.sel().clear()
