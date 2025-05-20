@@ -336,11 +336,14 @@ class GetEnvNamesTask(threading.Thread):
                 r'subsubsection\*?|paragraph\*?|frametitle)')
 
         # replace view with contents (x6)
-        view = self.active_view
-        st_begins = view.find_all(begin_re, sublime.IGNORECASE)
-        st_ends = view.find_all(end_re, sublime.IGNORECASE)
-        begins = filter_non_comment_regions(view, st_begins)
-        ends = filter_non_comment_regions(view, st_ends)
+        # view = self.active_view
+        contents = self.active_view.substr(sublime.Region(0, self.active_view.size()))
+        st_begins = [(m.start(), m.end()) for m in re.finditer(begin_re, contents)]
+        # st_begins = view.find_all(begin_re, sublime.IGNORECASE)
+        st_ends = [(m.start(), m.end()) for m in re.finditer(end_re, contents)]
+        # st_ends = view.find_all(end_re, sublime.IGNORECASE)
+        begins = filter_non_comment_regions(contents, st_begins)
+        ends = filter_non_comment_regions(contents, st_ends)
         pairs = _match_envs(begins, ends)
 
         for i in range(len(symlist)):
@@ -349,12 +352,15 @@ class GetEnvNamesTask(threading.Thread):
                 pass
             rgn = sym["region"]
             # replace view with contents (x3)
-            env_regions = _find_env_regions(view, rgn[0], pairs)
-            if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
+            # env_regions = _find_env_regions(view, rgn[0], pairs)
+            env_regions = _find_env_regions(contents, rgn[0], pairs)
+            # if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
+            if len(env_regions) == 0 or contents[env_regions[0][0]:env_regions[0][1]] == "document":
                 env_type = " ↪ Ref."
                 is_equation = False
             else:
-                env_type = view.substr(env_regions[0])
+                # env_type = view.substr(env_regions[0])
+                env_type = contents[env_regions[0][0]:env_regions[0][1]]
                 is_equation = equation_test(env_type)
                 env_type = env_type.title()
 
