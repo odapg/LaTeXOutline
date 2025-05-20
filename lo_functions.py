@@ -331,39 +331,56 @@ class GetEnvNamesTask(threading.Thread):
         elif "chapter" in [sym["type"] for sym in symlist]:
             shift = 1
 
-        # Look for matching \begin{...}/\end{...} pairs in the document
-        contents = self.active_view.substr(sublime.Region(0, self.active_view.size()))
-        st_begins = [(m.start(), m.end()) for m in re.finditer(begin_re, contents)]
-        st_ends = [(m.start(), m.end()) for m in re.finditer(end_re, contents)]
-        begins = filter_non_comment_regions(contents, st_begins)
-        ends = filter_non_comment_regions(contents, st_ends)
-        pairs = match_envs(begins, ends)
+        tex_files = lo_view.settings().get('file_list')
 
-        for i in range(len(symlist)):
-            sym = symlist[i]
-            if sym["type"] != "label" or sym["is_equation"]:
+        if len(tex_files) == 0:
+            tex_files = get_all_latex_files(self.active_view.file_name())
+            
+        # Ici changer pour l'ouverture du fichier
+        for file_path in tex_files:
+            if not os.path.exists(file_path):
                 pass
-            rgn = sym["region"]
-            env_regions = find_env_regions(contents, rgn[0], pairs)
-            if (len(env_regions) == 0 
-                    or contents[env_regions[0][0]:env_regions[0][1]] == "document"):
-                env_type = " ↪ Ref."
-                is_equation = False
-            else:
-                env_type = contents[env_regions[0][0]:env_regions[0][1]]
-                is_equation = equation_test(env_type)
-                env_type = env_type.title()
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    contents = f.read()
+            except:
+                pass
+            # Look for matching \begin{...}/\end{...} pairs in the document
+            st_begins = [(m.start(), m.end()) for m in re.finditer(begin_re, contents)]
+            st_ends = [(m.start(), m.end()) for m in re.finditer(end_re, contents)]
+            begins = filter_non_comment_regions(contents, st_begins)
+            ends = filter_non_comment_regions(contents, st_ends)
+            pairs = match_envs(begins, ends)
 
-            symlist[i]["env_type"] = env_type
-            symlist[i]["fancy_content"] = new_lo_line(
-                                            sym["content"],
-                                            sym["ref"], 
-                                            sym["type"], 
-                                            is_equation,
-                                            env_type=env_type,
-                                            show_ref_nb=True,
-                                            show_env_names = show_env_names,
-                                            shift=shift)
+            for i in range(len(symlist)):
+                sym = symlist[i]
+                if sym["file"] != file_path:
+                    print(sym["file"], file_path)
+                    continue
+                if sym["type"] != "label" or sym["is_equation"]:
+                    continue
+                rgn = sym["region"]
+                env_regions = find_env_regions(contents, rgn[0], pairs)
+
+                if (len(env_regions) == 0 
+                        or contents[env_regions[0][0]:env_regions[0][1]] == "document"):
+                    env_type = " ↪ Ref."
+                    is_equation = False
+                else:
+                    env_type = contents[env_regions[0][0]:env_regions[0][1]]
+                    is_equation = equation_test(env_type)
+                    env_type = env_type.title()
+
+                symlist[i]["env_type"] = env_type
+                symlist[i]["fancy_content"] = new_lo_line(
+                                                sym["content"],
+                                                sym["ref"], 
+                                                sym["type"], 
+                                                is_equation,
+                                                env_type=env_type,
+                                                show_ref_nb=True,
+                                                show_env_names = show_env_names,
+                                                shift=shift)
         # If it changed in the meantime
         lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
         if lo_view:
