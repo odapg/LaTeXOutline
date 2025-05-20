@@ -21,18 +21,16 @@ end_re = re.compile(end_re)
 
 def _find_env_regions(view, pos, pairs):
     """returns the regions corresponding to nearest matching environments"""
-
+# view -> contents: substr() begin() end()
     def extract_begin_region(region):
-        """creates a sublime.Region: \\begin{|text|}"""
         s = view.substr(region)
         boffset = len("\\begin{")
         m = begin_re.search(s)
         if m:
             boffset = m.regs[1][0]
         return sublime.Region(region.begin() + boffset, region.end() - 1)
-
+# view -> contents: begin() end()
     def extract_end_region(region):
-        """creates a sublime.Region: \\end{|text|}"""
         boffset = len("\\end{")
         return sublime.Region(region.begin() + boffset, region.end() - 1)
 
@@ -40,21 +38,20 @@ def _find_env_regions(view, pos, pairs):
 
     # get the nearest open environments
     try:
+# view -> contents: view
         begin, end = _find_surrounding_pair(view, pairs, pos)
-    except NoEnvError as e:
-        sublime.status_message(e.args[0])
+    except NoEnvError:
         return []
     
     # extract the regions for the environments
     begin_region = extract_begin_region(begin)
     end_region = extract_end_region(end)
 
+# view -> contents: substr()
     # validity check: matching env name
     if view.substr(begin_region) == view.substr(end_region):
         new_regions.append(begin_region)
         new_regions.append(end_region)
-    if not new_regions:
-        sublime.status_message("Environment detection failed")
 
     return new_regions
 
@@ -63,45 +60,8 @@ def _find_env_regions(view, pos, pairs):
 class NoEnvError(Exception):
     pass
 
-
-def _get_closest_begin(begin_before, end_before):
-    """returns the closest \\begin, that is open"""
-    end_iter = reversed(end_before)
-    begin_iter = reversed(begin_before)
-    while True:
-        try:
-            b = next(begin_iter)
-        except:
-            raise NoEnvError("No open environment detected")
-        try:
-            e = next(end_iter)
-        except:
-            break
-        if not b.begin() < e.begin():
-            break
-    return b
-
 # ------------------------------
-
-def _get_closest_end(end_after, begin_after):
-    """returns the closest \\end, that is open"""
-    end_iter = iter(end_after)
-    begin_iter = iter(begin_after)
-    while True:
-        try:
-            e = next(end_iter)
-        except:
-            raise NoEnvError("No closing environment detected")
-        try:
-            b = next(begin_iter)
-        except:
-            break
-        if not e.begin() > b.begin():
-            break
-    return e
-
-# ------------------------------
-
+# view -> contents  ! view.line
 def filter_non_comment_regions(view, regions):
     comment_line_re = re.compile(r"\s*%.*")
     def is_comment(reg):
@@ -110,7 +70,7 @@ def filter_non_comment_regions(view, regions):
     return [r for r in regions if not is_comment(r)]
 
 # ------------------------------
-
+# view -> contents, just substr
 def _extract_env_name(view, region, is_begin):
     s = view.substr(region)
     if is_begin:
@@ -122,7 +82,7 @@ def _extract_env_name(view, region, is_begin):
     return ""
 
 # ------------------------------
-
+# view -> contents: begin() and end()
 def _find_surrounding_pair(view, pairs, pos):
     matching_pairs = []
     for begin, end in pairs:
@@ -138,7 +98,7 @@ def _find_surrounding_pair(view, pairs, pos):
     return matching_pairs[0][0], matching_pairs[0][1]
 
 # ------------------------------
-
+# view -> contents: begin() 
 def _match_envs(begins, ends):
     """Match begin/end into a stack (one pass)"""
     stack = []

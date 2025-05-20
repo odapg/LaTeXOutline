@@ -10,10 +10,16 @@
     },
     "rules":
     [   {
+            "name": "Title",
+            "scope": "title.latexoutline",
+            "foreground": "rgb(229, 255, 215)",
+            "font_style": "glow",
+        },
+        {
             "name": "Part",
             "scope": "part.latexoutline, bullet.part.latexoutline",
             "foreground": "rgb(240, 150, 150)",
-            "font_style": "bold, glow",
+            "font_style": "bold",
         },
         {
             "name": "Chapter",

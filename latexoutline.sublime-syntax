@@ -15,9 +15,14 @@ variables:
   label_char: '›'
   copy_char: '❐'
   takealook_char: '⌖'
+  title_char: '❝'
+  title_end_char: '❞'
 
 contexts:
   main:
+    - match: ^({{title_char}}[^\n]+)
+      captures:
+        1: title.latexoutline
     - match: ({{part_char}}\s)([^\n{{takealook_char}}]+)({{takealook_char}}\s)(.*)
       captures:
         1: bullet.part.latexoutline
@@ -60,6 +65,9 @@ contexts:
         3: copy.latexoutline
         4: takealook.latexoutline
         5: label.latexoutline
+
+
+
 
 
 
