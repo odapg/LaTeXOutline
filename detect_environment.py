@@ -11,48 +11,38 @@ import bisect
 
 # -------------------------------------------------
 
-begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
-end_re = r"\\end\{([^\}]*)\}"
-# compile the begin_re (findall does not work if its compiled)
-begin_re = re.compile(begin_re)
-end_re = re.compile(end_re)
-
+begin_pattern = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
+end_pattern = r"\\end\{([^\}]*)\}"
+begin_re = re.compile(begin_pattern)
+end_re = re.compile(end_pattern)
+# For later use?
+# sec_re = (
+#          r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
+#          r'subsubsection\*?|paragraph\*?|frametitle)')
 # -------------------------------------------------
 
-def _find_env_regions(contents, pos, pairs):
+def find_env_regions(contents, pos, pairs):
     """returns the regions corresponding to nearest matching environments"""
-# view -> contents: substr() begin() end()
+
     def extract_begin_region(region):
-        # s = view.substr(region)
         s = contents[region[0]:region[1]]
         boffset = len("\\begin{")
         m = begin_re.search(s)
         if m:
             boffset = m.regs[1][0]
-        # return sublime.Region(region.begin() + boffset, region.end() - 1)
         return [region[0] + boffset, region[1] - 1]
-# view -> contents: begin() end()
+
     def extract_end_region(region):
         boffset = len("\\end{")
-        # return sublime.Region(region.begin() + boffset, region.end() - 1)
         return [region[0] + boffset, region[1] - 1]
 
     new_regions = []
-
-    # get the nearest open environments
     try:
-# view -> contents: view
         begin, end = _find_surrounding_pair(contents, pairs, pos)
-    except NoEnvError:
+    except:
         return []
-    
-    # extract the regions for the environments
     begin_region = extract_begin_region(begin)
     end_region = extract_end_region(end)
-
-# view -> contents: substr()
-    # validity check: matching env name
-    # if view.substr(begin_region) == view.substr(end_region):
     if contents[begin_region[0]:begin_region[1]] == contents[end_region[0]:end_region[1]]:
         new_regions.append(begin_region)
         new_regions.append(end_region)
@@ -61,11 +51,6 @@ def _find_env_regions(contents, pos, pairs):
 
 # ------------------------------
 
-class NoEnvError(Exception):
-    pass
-
-# ------------------------------
-# view -> contents  ! view.line
 def filter_non_comment_regions(contents, regions):
     comment_line_re = re.compile(r"\s*%.*")
     
@@ -83,7 +68,7 @@ def filter_non_comment_regions(contents, regions):
     return [r for r in regions if not is_comment(r)]
 
 # ------------------------------
-# view -> contents, just substr
+
 def _extract_env_name(contents, region, is_begin):
     s = contents[region[0]:region[1]]
     if is_begin:
@@ -95,7 +80,7 @@ def _extract_env_name(contents, region, is_begin):
     return ""
 
 # ------------------------------
-# view -> contents: begin() and end()
+
 def _find_surrounding_pair(contents, pairs, pos):
     matching_pairs = []
     for begin, end in pairs:
@@ -105,14 +90,14 @@ def _find_surrounding_pair(contents, pairs, pos):
             if name_begin == name_end:
                 matching_pairs.append((begin, end, begin[0]))
     if not matching_pairs:
-        raise NoEnvError("No matching environment found")
+        return []
 
     matching_pairs.sort(key=lambda x: -x[2])
     return matching_pairs[0][0], matching_pairs[0][1]
 
 # ------------------------------
-# view -> contents: begin() 
-def _match_envs(begins, ends):
+
+def match_envs(begins, ends):
     """Match begin/end into a stack (one pass)"""
     stack = []
     pairs = []

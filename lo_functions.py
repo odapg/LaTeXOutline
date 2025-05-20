@@ -9,7 +9,9 @@ import re
 import unicodedata
 from sublime import Region
 from .parse_aux import parse_aux_file, extract_brace_group
-from .detect_environment import _find_env_regions, filter_non_comment_regions, _match_envs
+from .detect_environment import (
+    find_env_regions, filter_non_comment_regions, match_envs,
+    begin_re, end_re )
 import time
 import threading
 
@@ -329,37 +331,25 @@ class GetEnvNamesTask(threading.Thread):
         elif "chapter" in [sym["type"] for sym in symlist]:
             shift = 1
 
-        begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
-        end_re = r"\\end\{([^\}]*)\}"
-        sec_re = (
-                r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
-                r'subsubsection\*?|paragraph\*?|frametitle)')
-
-        # replace view with contents (x6)
-        # view = self.active_view
+        # Look for matching \begin{...}/\end{...} pairs in the document
         contents = self.active_view.substr(sublime.Region(0, self.active_view.size()))
         st_begins = [(m.start(), m.end()) for m in re.finditer(begin_re, contents)]
-        # st_begins = view.find_all(begin_re, sublime.IGNORECASE)
         st_ends = [(m.start(), m.end()) for m in re.finditer(end_re, contents)]
-        # st_ends = view.find_all(end_re, sublime.IGNORECASE)
         begins = filter_non_comment_regions(contents, st_begins)
         ends = filter_non_comment_regions(contents, st_ends)
-        pairs = _match_envs(begins, ends)
+        pairs = match_envs(begins, ends)
 
         for i in range(len(symlist)):
             sym = symlist[i]
             if sym["type"] != "label" or sym["is_equation"]:
                 pass
             rgn = sym["region"]
-            # replace view with contents (x3)
-            # env_regions = _find_env_regions(view, rgn[0], pairs)
-            env_regions = _find_env_regions(contents, rgn[0], pairs)
-            # if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
-            if len(env_regions) == 0 or contents[env_regions[0][0]:env_regions[0][1]] == "document":
+            env_regions = find_env_regions(contents, rgn[0], pairs)
+            if (len(env_regions) == 0 
+                    or contents[env_regions[0][0]:env_regions[0][1]] == "document"):
                 env_type = " ↪ Ref."
                 is_equation = False
             else:
-                # env_type = view.substr(env_regions[0])
                 env_type = contents[env_regions[0][0]:env_regions[0][1]]
                 is_equation = equation_test(env_type)
                 env_type = env_type.title()
@@ -711,7 +701,7 @@ def get_contents_from_latex_file(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
             return content
-    except Exception as e:
+    except:
         return None
 
 # --------------------------
@@ -767,7 +757,7 @@ def get_all_latex_files(file_path):
                 full_path += ".tex"
             if os.path.exists(full_path):
                 all_files.append(full_path)
-    except Exception as e:
+    except:
         pass
     return all_files
 
