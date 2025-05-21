@@ -12,7 +12,7 @@ from .parse_aux import parse_aux_file, extract_brace_group
 from .parse_out import parse_out_file
 from .detect_environment import (
     find_env_regions, filter_non_comment_regions, match_envs,
-    begin_re, end_re )
+    begin_re, end_re, is_comment )
 import time
 import threading
 
@@ -782,6 +782,8 @@ def extract_symbols_from_content(content, file_path):
         pattern = re.compile(rf"\\({command})(\*)?\s*\{{")
         for match in pattern.finditer(content):
             cmd_name = match.group(1)
+            if is_comment(content, (match.start(),match.end())):
+                continue
             has_star = match.group(2)
             sym_type = cmd_name + (has_star or "")
 

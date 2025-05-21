@@ -47,21 +47,26 @@ def find_env_regions(contents, pos, pairs):
 
 # ------------------------------
 
+def get_lines(text, start, end):
+    line_start = text.rfind('\n', 0, start)
+    line_start = 0 if line_start == -1 else line_start + 1
+    line_end = text.find('\n', end)
+    line_end = len(text) if line_end == -1 else line_end
+    return text[line_start:line_end]
+
+# ------------------------------
+
+comment_line_re = re.compile(r"\s*%.*")
+
+def is_comment(contents, reg):
+    line_str = get_lines(contents, reg[0], reg[1])
+    return comment_line_re.match(line_str) is not None
+
+# ------------------------------
+
 def filter_non_comment_regions(contents, regions):
-    comment_line_re = re.compile(r"\s*%.*")
     
-    def get_lines(text, start, end):
-        line_start = text.rfind('\n', 0, start)
-        line_start = 0 if line_start == -1 else line_start + 1
-        line_end = text.find('\n', end)
-        line_end = len(text) if line_end == -1 else line_end
-        return text[line_start:line_end]
-
-    def is_comment(reg):
-        line_str = get_lines(contents, reg[0], reg[1])
-        return comment_line_re.match(line_str) is not None
-
-    return [r for r in regions if not is_comment(r)]
+    return [r for r in regions if not is_comment(contents, r)]
 
 # ------------------------------
 

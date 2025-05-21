@@ -23,9 +23,15 @@ def parse_out_file(path):
                 ref, raw_title, parent, num = match.groups()
                 ref_parts = ref.split(".", 1)
                 title = decode_utf16_bookmark(raw_title)
+                title = remove_prefix(ref_parts[1], title)
                 item = [ref_parts[0], ref_parts[1], title, num]
                 out_data.append(item)
                 
     return out_data
 
 
+def remove_prefix(begin, string):
+    pattern = re.compile(rf'^{re.escape(begin)}[\s\.]*')
+    if pattern.match(string):
+        return pattern.sub('', string)
+    return string

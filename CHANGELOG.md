@@ -1,5 +1,16 @@
 ## LaTeXOutline for Sublime Text -- Changelog
 
+#### Version 2.4
+
+- Parses the `.out` file (when available) to present the final names of sections in the outline (when the `show_environments_names` is set to `true`).
+- Bugfix (detected commented sections).
+
+
+#### Version 2.3
+
+- LaTeXOutline now accepts multiple-file documents.
+- Internal modifications (LO no longer relies on ST's `symbols` list)
+
 
 #### Version 2.2
 
