@@ -11,16 +11,11 @@ import bisect
 
 # -------------------------------------------------
 
-# begin_pattern = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
 begin_pattern = r"\\begin\{([^\}]*)\}"
-
 end_pattern = r"\\end\{([^\}]*)\}"
 begin_re = re.compile(begin_pattern)
 end_re = re.compile(end_pattern)
-# For later use?
-# sec_re = (
-#          r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
-#          r'subsubsection\*?|paragraph\*?|frametitle)')
+
 # -------------------------------------------------
 
 def find_env_regions(contents, pos, pairs):
@@ -45,9 +40,8 @@ def find_env_regions(contents, pos, pairs):
         return []
     begin_region = extract_begin_region(begin)
     end_region = extract_end_region(end)
-    if contents[begin_region[0]:begin_region[1]] == contents[end_region[0]:end_region[1]]:
-        new_regions.append(begin_region)
-        new_regions.append(end_region)
+    new_regions.append(begin_region)
+    new_regions.append(end_region)
 
     return new_regions
 
@@ -95,15 +89,12 @@ def _find_surrounding_pair(contents, pairs, pos):
         return []
 
     matching_pairs.sort(key=lambda x: -x[2])
-    return matching_pairs[0][0], matching_pairs[0][1]
+    return (matching_pairs[0][0], matching_pairs[0][1])
 
 # ------------------------------
 
-import re
-
 def match_envs(contents, begins, ends):
 
-    # Préparation des événements
     events = []
     for b in begins:
         text = contents[b[0]:b[1]]
@@ -118,10 +109,8 @@ def match_envs(contents, begins, ends):
             name = m.group(1)
             events.append(("end", e, name))
 
-    # Tri dans l’ordre du document
     events.sort(key=lambda x: x[1][0])
 
-    # Association via une pile
     stack = []
     pairs = []
 
@@ -137,18 +126,3 @@ def match_envs(contents, begins, ends):
                     break
 
     return pairs
-
-# def match_envs(begins, ends):
-#     """Match begin/end into a stack (one pass)"""
-#     stack = []
-#     pairs = []
-#     i, j = 0, 0
-#     while i < len(begins) and j < len(ends):
-#         if begins[i][0] < ends[j][0]:
-#             stack.append(begins[i])
-#             i += 1
-#         else:
-#             if stack:
-#                 pairs.append((stack.pop(), ends[j]))
-#             j += 1
-#     return pairs

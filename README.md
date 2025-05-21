@@ -7,8 +7,6 @@ LaTeXOutline is an ST4 package which allows displaying a clickable table of cont
 LaTeXOutline is intended to be used with the `article`, `book` and `beamer` LaTeX classes.
 In particular, the captured sectioning commands are: `part`, `chapter`, `section`, `subsection`, `subsubsection`, `subsubsubsection`, `paragraph` and `frametitle`.
 
-It only works with *single-file* LaTeX documents.
-
 ![LaTeXOutline example](./images/example.png)
 
 #### Manual installation
@@ -29,7 +27,7 @@ It only works with *single-file* LaTeX documents.
 
 3. Click on the titles in the LaTeXOutline tab to get to the corresponding place in your LaTeX file.
 
-   Click on a `⌖` sign to take a look at a part of the LaTeX file without moving the caret. Use the standard Sublime Text keybinding `ctrl k, ctrl c` (`⌘ k, ⌘ c` on mac) to go back to the original place.
+   Click on a `⌖` sign to take a look at a part of the LaTeX file without moving the caret. Use the standard Sublime Text keybinding `ctrl k, ctrl c` (`⌘ k, ⌘ c` on mac) to go back to the original place (or switch tab if it changed).
 
    Click on a `❐` sign to copy the corresponding label to the clipboard.
 
@@ -42,9 +40,7 @@ It only works with *single-file* LaTeX documents.
 
 ### Known issues
 
-- LaTeXOutline does not work with multiple-files LaTeX projects. The commands `\input{other.tex}` are not taken into account.
 - Section numbering does not work with the use of the `cleveref` package. It is likely that many packages interfering with the `.aux` file can create issues as well.
-- Spaces or parentheses in labels are not recognized in ST's symbols list and therefore not by LaTeXOutline either.
 
 ### License
 

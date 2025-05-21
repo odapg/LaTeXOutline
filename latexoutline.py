@@ -213,8 +213,6 @@ class LatexOutlineEventHandler(EventListener):
         window = sublime.active_window()
         lo_view = view
 
-        # Get the LaTeX view from the settings
-
         current_view_id = lo_view.settings().get('active_view')
         possible_views = [v for v in window.views() if v.id() == current_view_id]
         current_view = None if not possible_views else possible_views[0]
@@ -246,10 +244,10 @@ class LatexOutlineEventHandler(EventListener):
         region = symlist[row]["region"]
         start = region[0]
         
-        active_view = None
+        target_view = None
         for v in sublime.active_window().views():
             if v.file_name() == file:
-                active_view = v
+                target_view = v
                 break
 
         # If the copy symbol ❐ was pressed
@@ -259,34 +257,28 @@ class LatexOutlineEventHandler(EventListener):
             sublime.active_window().status_message(
             f" ✓ Copied reference '{label}' to the clipboard")
             lo_view.sel().clear()
-            sublime.active_window().focus_view(active_view)
+            sublime.active_window().focus_view(target_view)
             return
 
         # If the takealook symbol ◎ was pressed
         if 'takealook' in sel_scope:
-            active_view.add_regions(
-                "takealook", 
-                active_view.lines(Region(region[0],region[1])),
-                icon='Packages/LaTeXOutline/images/chevron.png',
-                scope='region.bluish',
-                flags=1024,
-            )
-            active_view.show_at_center(region[0])
-            sublime.active_window().focus_view(active_view)
-            sublime.set_timeout_async(lambda: active_view.erase_regions("takealook"), 5000)
+            if not target_view:
+                current_view.window().focus_view(current_view)
+                target_view = sublime.active_window().open_file(file)
+            takealook(target_view, region)
             return
 
         # otherwise, go to the corresponding region or copy the section label
         # if the bullet is pressed
         if 'bullet' in sel_scope:
-            copy_label(active_view, region)
+            copy_label(target_view, region)
         else:
-            if not active_view:
+            if not target_view:
                 current_view.window().focus_view(current_view)
-                active_view = sublime.active_window().open_file(file)
-                sublime.set_timeout(lambda: navigate_to(active_view, start), 500)
+                target_view = sublime.active_window().open_file(file)
+                sublime.set_timeout(lambda: navigate_to(target_view, start), 500)
             else:
-                navigate_to(active_view, start)          
+                navigate_to(target_view, start)          
 
 # ------- 
 # Arranges the layout when one closes the outline manually
@@ -325,6 +317,3 @@ class LatexOutlineEventHandler(EventListener):
         outline_type = lo_view.settings().get('current_outline_type')
         refresh_lo_view(lo_view, window.active_view().file_name(), window.active_view(), outline_type)
 
-    def on_pre_close_window(window):
-        if get_sidebar_status(window):
-            window.run_command('latex_outline_close_sidebar')

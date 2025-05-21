@@ -9,6 +9,7 @@ import re
 import unicodedata
 from sublime import Region
 from .parse_aux import parse_aux_file, extract_brace_group
+from .parse_out import parse_out_file
 from .detect_environment import (
     find_env_regions, filter_non_comment_regions, match_envs,
     begin_re, end_re )
@@ -331,6 +332,9 @@ class GetEnvNamesTask(threading.Thread):
         lo_settings = sublime.load_settings('latexoutline.sublime-settings')
         show_env_names = lo_settings.get('show_environments_names')
 
+        path = lo_view.settings().get('current_file')
+        out_data = get_out_file_data(path)
+
         shift = 0
         if "part" in [sym["type"] for sym in symlist]:
             shift = 2
@@ -362,8 +366,26 @@ class GetEnvNamesTask(threading.Thread):
                 sym = symlist[i]
                 if sym["file"] != file_path:
                     continue
+
                 if sym["type"] != "label" or sym["is_equation"]:
-                    continue
+                    if len(out_data)>0 and sym["type"] != "title":
+                        # Adds section names from the .out file
+                        for l, data in enumerate(out_data):
+                            if data[0] == sym["type"] and data[1] == sym["ref"]:
+                                sym["content"] = data[2]
+                                out_data.pop(l)
+                                symlist[i]["fancy_content"] = new_lo_line(
+                                                                sym["content"],
+                                                                sym["ref"], 
+                                                                sym["type"], 
+                                                                False,
+                                                                env_type="",
+                                                                show_ref_nb=True,
+                                                                show_env_names = show_env_names,
+                                                                shift=shift)
+                    else:
+                        continue
+
                 rgn = sym["region"]
                 env_regions = find_env_regions(contents, rgn[0], pairs)
 
@@ -392,6 +414,7 @@ class GetEnvNamesTask(threading.Thread):
             lo_view.settings().set('symlist', symlist)
             outline_type = lo_view.settings().get('current_outline_type')
             fill_sidebar(lo_view, symlist, outline_type)
+
         
 # --------------------------
 
@@ -653,13 +676,26 @@ def get_symbols(file_path):
 def get_aux_file_data(path):
     '''
     Given a .tex file, gather information from the .aux file
-    and store it in aux.data settings
     '''
     if path:
         aux_file = os.path.splitext(path)[0] + ".aux"
         if os.path.exists(aux_file):
             all_data = parse_aux_file(aux_file)
             return all_data
+    else:
+        return None
+
+# --------------------------
+
+def get_out_file_data(path):
+    '''
+    Given a .tex file, gather information from the .out file
+    '''
+    if path:
+        out_file = os.path.splitext(path)[0] + ".out"
+        if os.path.exists(out_file):
+            out_data = parse_out_file(out_file)
+            return out_data
     else:
         return None
            
@@ -806,4 +842,21 @@ def navigate_to(view, pos):
         view.sel().add(region)
         view.window().focus_view(view)
         view.show_at_center(region)
+
+# --------------------------
+
+def takealook(view, region):
+    if view.is_loading():
+        sublime.set_timeout(lambda: takealook(view, region), 100)
+    else:
+        view.add_regions(
+                "takealook", 
+                view.lines(Region(region[0],region[1])),
+                icon='Packages/LaTeXOutline/images/chevron.png',
+                scope='region.bluish',
+                flags=1024,
+            )
+        view.show_at_center(region[0])
+        sublime.active_window().focus_view(view)
+        sublime.set_timeout_async(lambda: view.erase_regions("takealook"), 5000)
 
