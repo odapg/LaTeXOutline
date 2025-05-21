@@ -809,7 +809,7 @@ def get_all_latex_files(file_path):
     try:
         with open(file_path, "r", encoding="utf-8") as f:
             content = f.read()
-        included_files = re.findall(r"\\input\{(.+?)\}", content)
+        included_files = re.findall(r"\\(?:input|include)\{(.+?)\}", content)
         base_dir = os.path.dirname(file_path)
         for rel in included_files:
             full_path = os.path.join(base_dir, rel)
