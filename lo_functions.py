@@ -8,8 +8,10 @@ from sublime_plugin import TextCommand
 import re
 import unicodedata
 from sublime import Region
-from .parse_aux import parse_aux_file
-from .detect_environment import _find_env_regions, filter_non_comment_regions, _match_envs
+from .parse_aux import parse_aux_file, extract_brace_group
+from .detect_environment import (
+    find_env_regions, filter_non_comment_regions, match_envs,
+    begin_re, end_re )
 import time
 import threading
 
@@ -65,7 +67,7 @@ def show_outline(window, side="right", outline_type="toc", path=None):
 
 # --------------------------
 
-def fill_symlist(unfiltered_symlist, path, view):
+def fill_symlist(base_symlist, path, view, lo_view):
     '''
     Filters the symlist to only show sections and labels
     Prepares their presentation in the LO view, put it in the 'symlist' setting
@@ -74,54 +76,57 @@ def fill_symlist(unfiltered_symlist, path, view):
     show_ref_nb = lo_settings.get('show_ref_numbers')
     show_env_names = lo_settings.get('show_environments_names')
 
-    pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*|[^\\].*'
-    filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
-        
+    # pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*|[^\\].*'
+    # filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
+
     part_pattern = re.compile(r"^Part")
     chap_pattern = re.compile(r"^Chapter:")
-    
     shift = 0
-    if any(part_pattern.search(b) for _, b in filtered_symlist):
+    if any(part_pattern.search(b["type"]) for b in base_symlist):
         shift = 2
-    elif any(chap_pattern.search(b) for _, b in filtered_symlist):
+    elif any(chap_pattern.search(b["type"]) for b in base_symlist):
         shift = 1
 
     aux_data = get_aux_file_data(path)
     
-    sym_list = []
-
-    for item in filtered_symlist:
-        rgn, sym, type, true_sym = extract_from_sym(item)
+    symlist = []
+    for item in base_symlist:
+        rgn = item["region"]
+        sym = item["content"]
+        type = item["type"]
+        file = item["file"]
 
         if show_ref_nb and aux_data:
-            ref= get_ref(true_sym, type, aux_data)
+            ref= get_ref(sym, type, aux_data)
         else:
             ref = None
+        is_equation = False
 
-        is_equation = "math.block.be.latex" in view.scope_name(rgn.begin())
-
-        fancy_content = new_lo_line(true_sym, ref, type, is_equation=is_equation, 
+        fancy_content = new_lo_line(sym, ref, type, is_equation=is_equation, 
                                     show_ref_nb=show_ref_nb, 
                                     show_env_names=show_env_names, shift=shift)
 
         # Creates the entry of the generated symbol list
-        sym_list.append(
-            {"region": (rgn.a, rgn.b),
+        symlist.append(
+            {"region": (rgn[0], rgn[1]),
              "type": type,
              "content": sym,
-             "truesym": true_sym,
              "is_equation": is_equation,
+             "file": file, 
              "fancy_content": fancy_content,
              "ref": ref,
              "env_type": ""}
             )
+
+    lo_view.settings().erase('symlist')
+    lo_view.settings().set('symlist', symlist)
 
     # Getting environment names can take some time; better let it in the background
     if show_env_names:
         thread = GetEnvNamesTask(view)
         thread.start()
 
-    return sym_list
+    return symlist
 
 
 # --------------------------
@@ -130,20 +135,21 @@ def refresh_lo_view(lo_view, path, view, outline_type):
     '''Completely refresh the contents of the outline view'''
 
     # Get the section/label list
-    unfiltered_st_symlist = get_st_symbols(view)
-    sym_list = fill_symlist(unfiltered_st_symlist, path, view)
+    symlist, tex_files = get_symbols(path)
+    new_sym_list = fill_symlist(symlist, path, view, lo_view)
     active_view_id = view.id()
 
     if lo_view is not None:
         # Save variables to the sidebar view settings
-        lo_view.settings().erase('symlist')
-        lo_view.settings().set('symlist', sym_list)
         if active_view_id:
             lo_view.settings().set('active_view', active_view_id)
         if path:
             lo_view.settings().set('current_file', path)
+        lo_view.settings().set('file_list', tex_files)
         # Fills the sidebar contents
-        fill_sidebar(lo_view, sym_list, outline_type)
+        fill_sidebar(lo_view, new_sym_list, outline_type)
+        view.settings().set('sync_in_progress', False)
+        sync_lo_view()
 
 
 # --------------------------
@@ -164,7 +170,7 @@ class LatexOutlineFillSidebarCommand(TextCommand):
                                 if item["type"] != "label"]
         else:
             symlist_contents = [item["fancy_content"] for item in symlist]
-            
+
         self.view.erase(edit, Region(0, self.view.size()))    
         self.view.insert(edit, 0, "\n".join(symlist_contents))
         self.view.sel().clear()
@@ -176,7 +182,7 @@ def sync_lo_view():
     ''' sync the outline view with current place in the LaTeX file '''
 
     lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
-    if not lo_view or not lo_view.settings().get('outline_sync'):
+    if not lo_view:# or not lo_view.settings().get('outline_sync'):
         return
     if lo_view is not None:
         outline_type = lo_view.settings().get('current_outline_type')
@@ -192,9 +198,23 @@ def sync_lo_view():
             sym_list = settings_sym_list
         
         point = view.sel()[0].end()
-        range_lows = [view.line(item['region'][0]).begin() for item in sym_list]
+        file_path = view.file_name()
+        partial_symlist = [s for s in sym_list if s["file"] == file_path]
+        range_lows = [view.line(item['region'][0]).begin() for item in partial_symlist]
         range_sorted = [0] + range_lows[1:len(range_lows)] + [view.size()]
-        lo_line = binary_search(range_sorted, point) - 1
+        partial_index = binary_search(range_sorted, point) - 1 
+        lo_line = sym_list.index(partial_symlist[partial_index])
+        # Highlight the previous (sub)section rather than the label
+        if outline_type != "toc":
+            for i in range(lo_line, -1, -1):
+                if sym_list[i]["type"] != "label":
+                    lo_line = i
+                    break
+                    
+        is_title = any([s for s in sym_list if s["type"] == "title"])
+        if is_title and lo_line != 0:
+            lo_line += 1
+
         lo_point_start = lo_view.text_point_utf8(lo_line, 0)
         lo_view.show_at_center(lo_point_start, animate=True)
         lo_view.sel().clear()
@@ -213,7 +233,7 @@ def sync_lo_view():
 # --------------------------------------------------------------------------#
 
 
-def get_ref(true_sym, type, aux_data):
+def get_ref(sym, type, aux_data):
     '''Obtains the reference of the entry'''
     
     ref = None
@@ -221,10 +241,10 @@ def get_ref(true_sym, type, aux_data):
     # Labels
     if type == "label":
         ref = next((entry['reference'] for entry in aux_data
-                                if true_sym == entry['main_content']), '*')
+                                if sym == entry['main_content']), '*')
     # Sections
     else:
-        ts = normalize_for_comparison(true_sym)
+        ts = normalize_for_comparison(sym)
         for i, data_item in enumerate(aux_data):
             # Minimal check, this is not very precise, but should work
             # in most cases
@@ -238,11 +258,12 @@ def get_ref(true_sym, type, aux_data):
 
 # --------------------------
 
-def new_lo_line(true_sym, ref, type, is_equation=False,
+def new_lo_line(sym, ref, type, is_equation=False,
                  env_type="Ref.", show_ref_nb=False, show_env_names=False, shift=0):
     '''Creates the content to be displayed'''
     
     prefix = {
+    "title" : "❝",
     "part" : lo_chars['part'] + ' ',
     "chapter" : ' ' + lo_chars['chapter'] + ' ' if shift==2 else lo_chars['chapter'] + ' ',
     "section" : ' ' * shift + lo_chars['section'] + ' ',
@@ -254,27 +275,29 @@ def new_lo_line(true_sym, ref, type, is_equation=False,
     "copy" : ' ' + lo_chars['copy'], # + ' ',
     "takealook" : ' ' + lo_chars['takealook'] + ' ',
     }
-    
+    postfix = {"title" : "❞",}
     # Labels
     if type == "label":
         if show_ref_nb:
             if ref and is_equation:
                 new_sym_line = (prefix["label"] + 'Eq. (' + ref +')'
-                            + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
+                            + prefix["copy"] + prefix["takealook"] + '{' + sym + '}')
             elif ref:
                 new_sym_line = (prefix["label"] + env_type + ' ' + ref 
-                    + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
+                    + prefix["copy"] + prefix["takealook"] + '{' + sym + '}')
             else:
                 new_sym_line = (prefix["label"] + env_type + ' *' 
-                    + prefix["copy"] + prefix["takealook"] + '{' + true_sym + '}')
+                    + prefix["copy"] + prefix["takealook"] + '{' + sym + '}')
         elif show_env_names:
             new_sym_line = (prefix["label"] + env_type + ' ' + prefix["copy"] 
-                + prefix["takealook"] + '{' + true_sym + '}')
+                + prefix["takealook"] + '{' + sym + '}')
         else:
-            new_sym_line = prefix["label"] + true_sym + prefix["copy"] + prefix["takealook"]
+            new_sym_line = prefix["label"] + sym + prefix["copy"] + prefix["takealook"]
     # Sections
+    elif type == "title":
+        new_sym_line = prefix["title"] + sym + postfix["title"] +"\n"
     else:
-        simple_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', true_sym)
+        simple_sym = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', sym)
         simple_sym = re.sub(r'\\label\{[^\}]*\}\s*', '', simple_sym)
         simple_sym = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', simple_sym)
         simple_sym = re.sub(r'\s*~\s*', r' ', simple_sym)
@@ -300,7 +323,6 @@ class GetEnvNamesTask(threading.Thread):
         self.active_view = active_view
 
     def run(self):
-        view = self.active_view
 
         lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
         if not lo_view:
@@ -315,37 +337,55 @@ class GetEnvNamesTask(threading.Thread):
         elif "chapter" in [sym["type"] for sym in symlist]:
             shift = 1
 
-        begin_re = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
-        end_re = r"\\end\{([^\}]*)\}"
-        sec_re = (
-                r'^\\(part\*?|chapter\*?|section\*?|subsection\*?|'
-                r'subsubsection\*?|paragraph\*?|frametitle)'
-            )
-        st_begins = view.find_all(begin_re, sublime.IGNORECASE)
-        st_ends = view.find_all(end_re, sublime.IGNORECASE)
-        begins = filter_non_comment_regions(view, st_begins)
-        ends = filter_non_comment_regions(view, st_ends)
-        pairs = _match_envs(begins, ends)
+        tex_files = lo_view.settings().get('file_list')
 
-        for i in range(len(symlist)):
-            sym = symlist[i]
-            if sym["type"] != "label" or sym["is_equation"]:
+        if len(tex_files) == 0:
+            tex_files = get_all_latex_files(self.active_view.file_name())
+            
+        # Ici changer pour l'ouverture du fichier
+        for file_path in tex_files:
+            if not os.path.exists(file_path):
                 pass
-            rgn = sym["region"]
-            env_regions = _find_env_regions(view, rgn[0], pairs)
-            if len(env_regions) == 0 or view.substr(env_regions[0]) == "document":
-                env_type = " ↪ Ref."
-            else:
-                env_type = view.substr(env_regions[0])
-                env_type = env_type.title()
-            symlist[i]["env_type"] = env_type
-            symlist[i]["fancy_content"] = new_lo_line(sym["truesym"],
-                                             sym["ref"], sym["type"], 
-                                             sym["is_equation"],
-                                             env_type=env_type,
-                                             show_ref_nb=True,
-                                             show_env_names = show_env_names,
-                                             shift=shift)
+            try:
+                with open(file_path, "r", encoding="utf-8") as f:
+                    contents = f.read()
+            except:
+                pass
+            # Look for matching \begin{...}/\end{...} pairs in the document
+            st_begins = [(m.start(), m.end()) for m in re.finditer(begin_re, contents)]
+            st_ends = [(m.start(), m.end()) for m in re.finditer(end_re, contents)]
+            begins = filter_non_comment_regions(contents, st_begins)
+            ends = filter_non_comment_regions(contents, st_ends)
+            pairs = match_envs(contents, begins, ends)
+
+            for i in range(len(symlist)):
+                sym = symlist[i]
+                if sym["file"] != file_path:
+                    continue
+                if sym["type"] != "label" or sym["is_equation"]:
+                    continue
+                rgn = sym["region"]
+                env_regions = find_env_regions(contents, rgn[0], pairs)
+
+                if (len(env_regions) == 0 
+                        or contents[env_regions[0][0]:env_regions[0][1]] == "document"):
+                    env_type = " ↪ Ref."
+                    is_equation = False
+                else:
+                    env_type = contents[env_regions[0][0]:env_regions[0][1]]
+                    is_equation = equation_test(env_type)
+                    env_type = env_type.title()
+
+                symlist[i]["env_type"] = env_type
+                symlist[i]["fancy_content"] = new_lo_line(
+                                                sym["content"],
+                                                sym["ref"], 
+                                                sym["type"], 
+                                                is_equation,
+                                                env_type=env_type,
+                                                show_ref_nb=True,
+                                                show_env_names = show_env_names,
+                                                shift=shift)
         # If it changed in the meantime
         lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
         if lo_view:
@@ -359,22 +399,32 @@ def refresh_regions(lo_view, active_view):
     '''
     Merely refresh the regions in the symlist
     '''
-    sym_list = lo_view.settings().get('symlist')
-    unfiltered_st_symlist = get_st_symbols(active_view)
+    in_sync = lo_view.settings().get('regions_refreshed_recently')
+    if in_sync:
+        return
+    lo_view.settings().set('regions_refreshed_recently', True)
+    path = active_view.file_name()
+    symlist = lo_view.settings().get('symlist')
+    content = active_view.substr(sublime.Region(0, active_view.size()))
+    new_symlist = extract_symbols_from_content(content, path)
 
-    for item in sym_list:
+    for i in range(0,len(symlist)-1):
+        if symlist[i]["file"] != path:
+            pass
         first=None
-        key = item["content"]
-        for i, (x, y) in enumerate(unfiltered_st_symlist):
-            if re.sub(r'\n', ' ', y) == key:
-                first = unfiltered_st_symlist.pop(i)
+        item = symlist[i]
+        for k, it in enumerate(new_symlist):
+            if it["content"] == item["content"]:
+                first = new_symlist.pop(k)
                 break      
 
         if first:
-            region = first[0]
-            item["region"] = (region.a, region.b)
+            region = first["region"]
+            symlist[i]["region"] = region
 
-    lo_view.settings().set('symlist', sym_list)
+    lo_view.settings().set('symlist', symlist)
+    sublime.set_timeout(
+        lambda: lo_view.settings().set('regions_refreshed_recently', False), 20000)
     return 
 
 # --------------------------
@@ -386,9 +436,10 @@ def light_refresh(lo_view, active_view, outline_type):
     symlist = lo_view.settings().get('symlist')
     lo_settings = sublime.load_settings('latexoutline.sublime-settings')
     show_ref_nb = lo_settings.get('show_ref_numbers')
-    unfiltered_st_symlist = get_st_symbols(active_view)
-    st_symlist = [sym for sym in unfiltered_st_symlist if not sym[1].startswith('\\')]
-    print(st_symlist)
+    path = active_view.file_name()
+    unfiltered_st_symlist, tex_files = get_symbols(path)
+    # st_symlist = [sym for sym in unfiltered_st_symlist if not sym[1].startswith('\\')]
+
     shift = 0
     if "part" in [sym["type"] for sym in symlist]:
         shift = 2
@@ -397,19 +448,18 @@ def light_refresh(lo_view, active_view, outline_type):
 
     new_symlist = []
     for sym in st_symlist:
-        key = re.sub(r'\n', ' ', sym[1])
         item = {}
         key_unfound = True
         for i in range(len(symlist)):
-            if key == symlist[i]["content"]:
+            if sym["content"] == symlist[i]["content"]:
                 item=symlist.pop(i)
                 key_unfound = False
                 break
 
         if key_unfound:
-            rgn, sym, type, true_sym = extract_from_sym(sym)
-            is_equation = "math.block.be.latex" in active_view.scope_name(rgn.begin())
-            fancy_content = new_lo_line(true_sym, "…", type, is_equation, 
+            rgn, sym, type, sym = extract_from_sym(sym)
+            is_equation = False
+            fancy_content = new_lo_line(sym, "…", type, is_equation, 
                                     show_ref_nb=show_ref_nb, 
                                     show_env_names=show_env_names, shift=shift)
             item = {"region": (rgn.a, rgn.b),
@@ -417,26 +467,15 @@ def light_refresh(lo_view, active_view, outline_type):
              "content": sym,
              "is_equation": is_equation,
              "fancy_content": fancy_content,
-             "ref": "",
+             "file": path,
+             "ref": "…",
              "env_type": ""}
+
 
         new_symlist.append(item)
         
     lo_view.settings().set('symlist', new_symlist)
     return new_symlist
-
-
-
-# --------------------------
-
-def goto_region(active_view, region_position):
-    if active_view and region_position:
-        r = Region(region_position[0], region_position[0])
-        active_view.show_at_center(r)
-        active_view.sel().clear()
-        active_view.sel().add(r)
-        active_view.window().focus_view(active_view)
-
 
 # --------------------------
 
@@ -595,16 +634,19 @@ def get_sidebar_status(window):
 
 # --------------------------
 
-def get_st_symbols(view):
-    '''
-    Ask ST for the symbols list and apply a first filter according 
-    to the chosen outline type
-    '''
-    unfiltered_st_symlist = [
-        (v.region, v.name) for v in view.symbol_regions()
-        if v.kind[1] == 'f' or v.kind[1] == 'l'
-    ]
-    return unfiltered_st_symlist
+def get_symbols(file_path):
+    tex_files = get_all_latex_files(file_path)
+    all_symbols = []
+    for f in tex_files:
+        content = get_contents_from_latex_file(f)
+        if content:
+            more_symbols = extract_symbols_from_content(content, f)
+        else:
+            more_symbols = []
+        all_symbols.extend(more_symbols)
+    file_order = {path: index for index, path in enumerate(tex_files)}
+    all_symbols.sort(key=lambda s: (file_order.get(s["file"], 9999), s["region"][0]))
+    return all_symbols, tex_files
 
 # --------------------------
 
@@ -662,6 +704,7 @@ def binary_search(array, x):
 # --------------------------
 
 def normalize_for_comparison(s):
+    s = re.sub(r'\n', ' ', s)
     s = re.sub(r'\$[^\$]*?\$', '', s)
     s = re.sub(r'\\nonbreakingspace\s+', '~', s)
     s = re.sub(r'\\label\{[^\}]*\}\s*', '', s)
@@ -669,4 +712,115 @@ def normalize_for_comparison(s):
     s = re.sub(r'\s+', ' ', s)
     s = s.strip()
     return unicodedata.normalize("NFC", s)
+
+# --------------------------
+
+def get_contents_from_latex_file(file_path):
+
+    if not os.path.exists(file_path):
+        return None
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            return content
+    except:
+        return None
+
+# --------------------------
+
+def extract_symbols_from_content(content, file_path):
+    symbols = []    
+    symbol_patterns = [
+        ("title", "title", -1),
+        ("label", "label", 6),
+        ("part", "part", 0),
+        ("chapter", "chapter", 1),
+        ("section", "section", 2),
+        ("subsection", "subsection", 3),
+        ("subsubsection", "subsubsection", 4),
+        ("paragraph", "paragraph", 5),
+        ("frametitle", "frametitle", 3),
+    ]
+
+    for command, base_type, level in symbol_patterns:
+        pattern = re.compile(rf"\\({command})(\*)?\s*\{{")
+        for match in pattern.finditer(content):
+            cmd_name = match.group(1)
+            has_star = match.group(2)
+            sym_type = cmd_name + (has_star or "")
+
+            brace_start = match.end() - 1
+            name, brace_end = extract_brace_group(content, brace_start)
+            if name:
+                symbols.append({
+                    "content": name,
+                    "type": sym_type,
+                    "file": file_path,
+                    "region": [match.start(), brace_end],
+                    "ref": "",
+                    "is_equation": False,
+                    "fancy_content" : ""
+                })
+
+    return symbols
+
+# --------------------------
+
+def get_all_latex_files(file_path):
+    all_files = [file_path]
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+        included_files = re.findall(r"\\input\{(.+?)\}", content)
+        base_dir = os.path.dirname(file_path)
+        for rel in included_files:
+            full_path = os.path.join(base_dir, rel)
+            if not full_path.endswith(".tex"):
+                full_path += ".tex"
+            if os.path.exists(full_path):
+                all_files.append(full_path)
+    except:
+        pass
+    return all_files
+
+# --------------------------
+
+pattern = re.compile(r'''
+    (align|alignat|aligned|alignedat|displaymath
+    |eqnarray|equation|flalign|gather|gathered
+    |math|multline|x?xalignat|split
+    |dmath|dseries|dgroup|darray|dsuspend)(\*)?
+''', re.VERBOSE)
+
+def equation_test(type):
+    return bool(pattern.match(type))
+
+# --------------------------
+
+def navigate_to(view, pos):
+    if view.is_loading():
+        sublime.set_timeout(lambda: navigate_to(view, pos), 100)
+    else:
+        region = sublime.Region(pos, pos)
+        view.sel().clear()
+        view.sel().add(region)
+        view.window().focus_view(view)
+        view.show_at_center(region)
+
+# --------------------------
+
+def takealook(view, region):
+    if view.is_loading():
+        sublime.set_timeout(lambda: takealook(view, region), 100)
+    else:
+        view.add_regions(
+                "takealook", 
+                view.lines(Region(region[0],region[1])),
+                icon='Packages/LaTeXOutline/images/chevron.png',
+                scope='region.bluish',
+                flags=1024,
+            )
+        view.show_at_center(region[0])
+        sublime.active_window().focus_view(view)
+        sublime.set_timeout_async(lambda: view.erase_regions("takealook"), 5000)
 

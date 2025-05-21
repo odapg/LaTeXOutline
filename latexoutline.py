@@ -134,7 +134,7 @@ class LatexOutlineSyncEventHandler(EventListener):
             return
         if view.window().get_view_index(view)[0] == -1:
             return
-        if 'LaTeX.sublime-syntax' not in view.window().active_view().settings().get('syntax'):
+        if not view.match_selector(0, "text.tex.latex"):
             return
         # Debouncer
         if view.settings().get('sync_in_progress'):
@@ -164,11 +164,17 @@ class LatexOutlineEventHandler(EventListener):
         lo_view, lo_group = get_sidebar_view_and_group(view.window())
 
         if lo_view is not None:
-            if (view.file_name() is not None and 
-                    lo_view.settings().get('current_file') == view.file_name()):
+            if (view.file_name() is not None 
+                    and lo_view.settings().get('current_file') == view.file_name()):
+                return
+            tex_files = lo_view.settings().get('file_list')
+            if (view.file_name() is not None and tex_files is not None
+                     and view.file_name() in tex_files):
+                lo_view.settings().set('current_file', view.file_name())
                 return
             else:
                 lo_view.settings().set('current_file', view.file_name())
+                lo_view.settings().set('active_view', view.id())
                 outline_type = lo_view.settings().get('current_outline_type')
                 refresh_lo_view(lo_view, view.file_name(), view, outline_type)
 
@@ -198,7 +204,7 @@ class LatexOutlineEventHandler(EventListener):
 # ------- 
 # When the user clicks the outline, go to the corresponding place in the LaTeX file
 # or copy the label when asked
-
+                
     def on_selection_modified(self, view):
         if 'latexoutline' not in view.settings().get('syntax'):
             return
@@ -207,63 +213,72 @@ class LatexOutlineEventHandler(EventListener):
         window = sublime.active_window()
         lo_view = view
 
-        # Get the LaTeX view from the settings
-        active_view_id = lo_view.settings().get('active_view')
-        possible_views = [v for v in window.views() if v.id() == active_view_id]
-        active_view = None if not possible_views else possible_views[0]
+        current_view_id = lo_view.settings().get('active_view')
+        possible_views = [v for v in window.views() if v.id() == current_view_id]
+        current_view = None if not possible_views else possible_views[0]
 
-        if active_view is not None:
-            # Position and nature of the selected item in the outline
-            if len(lo_view.sel()) == 0:
-                return None
-            lo_view_sel = lo_view.sel()[0]
-            (row, col) = lo_view.rowcol(lo_view.sel()[0].begin())
-            sel_scope = lo_view.scope_name(lo_view.sel()[0].begin())
-            
-            # Refresh the regions (only) in the symlist
-            outline_type = lo_view.settings().get('current_outline_type')
-            refresh_regions(lo_view, active_view)
-            full_symlist = lo_view.settings().get('symlist')
-            if outline_type == "toc":
-                symlist = [sym for sym in full_symlist if sym["type"] != "label"]
+        # Position and nature of the selected item in the outline
+        if len(lo_view.sel()) == 0:
+            return None
+        lo_view_sel = lo_view.sel()[0]
+        (row, col) = lo_view.rowcol(lo_view.sel()[0].begin())
+        sel_scope = lo_view.scope_name(lo_view.sel()[0].begin())
+        
+        # Refresh the regions (only) in the symlist
+        refresh_regions(lo_view, current_view)
+        outline_type = lo_view.settings().get('current_outline_type')
+        full_symlist = lo_view.settings().get('symlist')
+        if outline_type == "toc":
+            symlist = [sym for sym in full_symlist if sym["type"] != "label"]
+        else:
+            symlist = full_symlist
+
+        is_title = any([s for s in symlist if s["type"] == "title"])
+        if is_title and row != 0:
+            row -= 1
+
+        # Get the region corresponding to the selected item
+        if not symlist or row is None:
+            return None
+        file = symlist[row]["file"]
+        region = symlist[row]["region"]
+        start = region[0]
+        
+        target_view = None
+        for v in sublime.active_window().views():
+            if v.file_name() == file:
+                target_view = v
+                break
+
+        # If the copy symbol ❐ was pressed
+        if 'copy' in sel_scope:
+            label = symlist[row]["content"]
+            sublime.set_clipboard(label)
+            sublime.active_window().status_message(
+            f" ✓ Copied reference '{label}' to the clipboard")
+            lo_view.sel().clear()
+            sublime.active_window().focus_view(target_view)
+            return
+
+        # If the takealook symbol ◎ was pressed
+        if 'takealook' in sel_scope:
+            if not target_view:
+                current_view.window().focus_view(current_view)
+                target_view = sublime.active_window().open_file(file)
+            takealook(target_view, region)
+            return
+
+        # otherwise, go to the corresponding region or copy the section label
+        # if the bullet is pressed
+        if 'bullet' in sel_scope:
+            copy_label(target_view, region)
+        else:
+            if not target_view:
+                current_view.window().focus_view(current_view)
+                target_view = sublime.active_window().open_file(file)
+                sublime.set_timeout(lambda: navigate_to(target_view, start), 500)
             else:
-                symlist = full_symlist
-
-            # Get the region corresponding to the selected item
-            if not symlist or row is None:
-                return None
-            region = symlist[row]["region"]
-            
-            # If the copy symbol ❐ was pressed
-            if 'copy' in sel_scope:
-                label = symlist[row]["content"]
-                sublime.set_clipboard(label)
-                sublime.active_window().status_message(
-                f" ✓ Copied reference '{label}' to the clipboard")
-                lo_view.sel().clear()
-                sublime.active_window().focus_view(active_view)
-                return
-
-            # If the takealook symbol ◎ was pressed
-            if 'takealook' in sel_scope:
-                active_view.add_regions(
-                    "takealook", 
-                    active_view.lines(Region(region[0],region[1])),
-                    icon='Packages/LaTeXOutline/images/chevron.png',
-                    scope='region.bluish',
-                    flags=1024,
-                )
-                active_view.show_at_center(region[0])
-                sublime.active_window().focus_view(active_view)
-                sublime.set_timeout_async(lambda: active_view.erase_regions("takealook"), 5000)
-                return
-
-            # otherwise, go to the corresponding region or copy the section label
-            # if the bullet is pressed
-            if 'bullet' in sel_scope:
-                copy_label(active_view, region)
-            else:
-                goto_region(active_view, region)          
+                navigate_to(target_view, start)          
 
 # ------- 
 # Arranges the layout when one closes the outline manually

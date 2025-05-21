@@ -21,7 +21,7 @@ def extract_brace_group(s, start):
                 return s[start+1:i], i + 1  # exclude outer braces
         i += 1
 
-    raise ValueError("Unmatched braces in string starting at position {}".format(start))
+    return None
 
 
 # --------------------------
