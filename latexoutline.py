@@ -325,3 +325,6 @@ class LatexOutlineEventHandler(EventListener):
         outline_type = lo_view.settings().get('current_outline_type')
         refresh_lo_view(lo_view, window.active_view().file_name(), window.active_view(), outline_type)
 
+    def on_pre_close_window(window):
+        if get_sidebar_status(window):
+            window.run_command('latex_outline_close_sidebar')

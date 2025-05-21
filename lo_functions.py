@@ -356,7 +356,7 @@ class GetEnvNamesTask(threading.Thread):
             st_ends = [(m.start(), m.end()) for m in re.finditer(end_re, contents)]
             begins = filter_non_comment_regions(contents, st_begins)
             ends = filter_non_comment_regions(contents, st_ends)
-            pairs = match_envs(begins, ends)
+            pairs = match_envs(contents, begins, ends)
 
             for i in range(len(symlist)):
                 sym = symlist[i]
@@ -804,6 +804,6 @@ def navigate_to(view, pos):
         region = sublime.Region(pos, pos)
         view.sel().clear()
         view.sel().add(region)
+        view.window().focus_view(view)
         view.show_at_center(region)
-    view.window().focus_view(view)
 

@@ -11,7 +11,9 @@ import bisect
 
 # -------------------------------------------------
 
-begin_pattern = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
+# begin_pattern = r"\\begin(?:\[[^\]]*\])?\{([^\}]*)\}"
+begin_pattern = r"\\begin\{([^\}]*)\}"
+
 end_pattern = r"\\end\{([^\}]*)\}"
 begin_re = re.compile(begin_pattern)
 end_re = re.compile(end_pattern)
@@ -97,17 +99,56 @@ def _find_surrounding_pair(contents, pairs, pos):
 
 # ------------------------------
 
-def match_envs(begins, ends):
-    """Match begin/end into a stack (one pass)"""
+import re
+
+def match_envs(contents, begins, ends):
+
+    # Préparation des événements
+    events = []
+    for b in begins:
+        text = contents[b[0]:b[1]]
+        m = begin_re.search(text)
+        if m:
+            name = m.group(1)
+            events.append(("begin", b, name))
+    for e in ends:
+        text = contents[e[0]:e[1]]
+        m = end_re.search(text)
+        if m:
+            name = m.group(1)
+            events.append(("end", e, name))
+
+    # Tri dans l’ordre du document
+    events.sort(key=lambda x: x[1][0])
+
+    # Association via une pile
     stack = []
     pairs = []
-    i, j = 0, 0
-    while i < len(begins) and j < len(ends):
-        if begins[i][0] < ends[j][0]:
-            stack.append(begins[i])
-            i += 1
-        else:
-            if stack:
-                pairs.append((stack.pop(), ends[j]))
-            j += 1
+
+    for kind, reg, name in events:
+        if kind == "begin":
+            stack.append((reg, name))
+        elif kind == "end":
+            for i in reversed(range(len(stack))):
+                b_reg, b_name = stack[i]
+                if b_name == name:
+                    pairs.append((b_reg, reg))
+                    del stack[i]
+                    break
+
     return pairs
+
+# def match_envs(begins, ends):
+#     """Match begin/end into a stack (one pass)"""
+#     stack = []
+#     pairs = []
+#     i, j = 0, 0
+#     while i < len(begins) and j < len(ends):
+#         if begins[i][0] < ends[j][0]:
+#             stack.append(begins[i])
+#             i += 1
+#         else:
+#             if stack:
+#                 pairs.append((stack.pop(), ends[j]))
+#             j += 1
+#     return pairs
