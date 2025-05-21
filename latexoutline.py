@@ -134,7 +134,7 @@ class LatexOutlineSyncEventHandler(EventListener):
             return
         if view.window().get_view_index(view)[0] == -1:
             return
-        if 'LaTeX.sublime-syntax' not in view.window().active_view().settings().get('syntax'):
+        if not view.match_selector(0, "text.tex.latex"):
             return
         # Debouncer
         if view.settings().get('sync_in_progress'):
@@ -236,7 +236,7 @@ class LatexOutlineEventHandler(EventListener):
             symlist = full_symlist
 
         is_title = any([s for s in symlist if s["type"] == "title"])
-        if is_title:
+        if is_title and row != 0:
             row -= 1
 
         # Get the region corresponding to the selected item

@@ -148,6 +148,8 @@ def refresh_lo_view(lo_view, path, view, outline_type):
         lo_view.settings().set('file_list', tex_files)
         # Fills the sidebar contents
         fill_sidebar(lo_view, new_sym_list, outline_type)
+        view.settings().set('sync_in_progress', False)
+        sync_lo_view()
 
 
 # --------------------------
@@ -180,7 +182,7 @@ def sync_lo_view():
     ''' sync the outline view with current place in the LaTeX file '''
 
     lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
-    if not lo_view or not lo_view.settings().get('outline_sync'):
+    if not lo_view:# or not lo_view.settings().get('outline_sync'):
         return
     if lo_view is not None:
         outline_type = lo_view.settings().get('current_outline_type')
@@ -196,9 +198,12 @@ def sync_lo_view():
             sym_list = settings_sym_list
         
         point = view.sel()[0].end()
-        range_lows = [view.line(item['region'][0]).begin() for item in sym_list]
+        file_path = view.file_name()
+        partial_symlist = [s for s in sym_list if s["file"] == file_path]
+        range_lows = [view.line(item['region'][0]).begin() for item in partial_symlist]
         range_sorted = [0] + range_lows[1:len(range_lows)] + [view.size()]
-        lo_line = binary_search(range_sorted, point) - 1 
+        partial_index = binary_search(range_sorted, point) - 1 
+        lo_line = sym_list.index(partial_symlist[partial_index])
         # Highlight the previous (sub)section rather than the label
         if outline_type != "toc":
             for i in range(lo_line, -1, -1):
@@ -209,6 +214,7 @@ def sync_lo_view():
         is_title = any([s for s in sym_list if s["type"] == "title"])
         if is_title and lo_line != 0:
             lo_line += 1
+
         lo_point_start = lo_view.text_point_utf8(lo_line, 0)
         lo_view.show_at_center(lo_point_start, animate=True)
         lo_view.sel().clear()
@@ -355,7 +361,6 @@ class GetEnvNamesTask(threading.Thread):
             for i in range(len(symlist)):
                 sym = symlist[i]
                 if sym["file"] != file_path:
-                    print(sym["file"], file_path)
                     continue
                 if sym["type"] != "label" or sym["is_equation"]:
                     continue
