@@ -1,5 +1,9 @@
 ## LaTeXOutline for Sublime Text -- Changelog
 
+#### Version 2.3
+
+- LO is now compatible with multiple .tex files documents
+- Internal changes (LO no longer depends on ST's symbols).
 
 #### Version 2.2
 
