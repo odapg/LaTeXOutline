@@ -335,7 +335,6 @@ class GetEnvNamesTask(threading.Thread):
 
         path = lo_view.settings().get('current_file')
         out_data = get_out_file_data(path)
-        print(out_data)
 
         shift = 0
         if "part" in [sym["type"] for sym in symlist]:
@@ -374,10 +373,11 @@ class GetEnvNamesTask(threading.Thread):
                         # Adds section names from the .out file
                         for l, data in enumerate(out_data):
                             if data[0] == sym["type"] and data[1] == sym["ref"]:
-                                sym["content"] = data[2]
+                                new_content = data[2]
+                                print(new_content)
                                 out_data.pop(l)
                                 symlist[i]["fancy_content"] = new_lo_line(
-                                                                sym["content"],
+                                                                new_content,
                                                                 sym["ref"], 
                                                                 sym["type"], 
                                                                 False,
@@ -388,29 +388,30 @@ class GetEnvNamesTask(threading.Thread):
                                 break
                     else:
                         continue
-
-                rgn = sym["region"]
-                env_regions = find_env_regions(contents, rgn[0], pairs)
-
-                if (len(env_regions) == 0 
-                        or contents[env_regions[0][0]:env_regions[0][1]] == "document"):
-                    env_type = " ↪ Ref."
-                    is_equation = False
                 else:
-                    env_type = contents[env_regions[0][0]:env_regions[0][1]]
-                    is_equation = equation_test(env_type)
-                    env_type = env_type.title()
+                    rgn = sym["region"]
+                    env_regions = find_env_regions(contents, rgn[0], pairs)
 
-                symlist[i]["env_type"] = env_type
-                symlist[i]["fancy_content"] = new_lo_line(
-                                                sym["content"],
-                                                sym["ref"], 
-                                                sym["type"], 
-                                                is_equation,
-                                                env_type=env_type,
-                                                show_ref_nb=True,
-                                                show_env_names = show_env_names,
-                                                shift=shift)
+                    if (len(env_regions) == 0 
+                            or contents[env_regions[0][0]:env_regions[0][1]] == "document"):
+                        env_type = " ↪ Ref."
+                        is_equation = False
+                    else:
+                        env_type = contents[env_regions[0][0]:env_regions[0][1]]
+                        is_equation = equation_test(env_type)
+                        env_type = env_type.title()
+
+                    symlist[i]["env_type"] = env_type
+                    symlist[i]["fancy_content"] = new_lo_line(
+                                                    sym["content"],
+                                                    sym["ref"], 
+                                                    sym["type"], 
+                                                    is_equation,
+                                                    env_type=env_type,
+                                                    show_ref_nb=True,
+                                                    show_env_names = show_env_names,
+                                                    shift=shift)
+
         # If it changed in the meantime
         lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
         if lo_view:
@@ -462,6 +463,7 @@ def light_refresh(lo_view, active_view, outline_type):
     symlist = lo_view.settings().get('symlist')
     lo_settings = sublime.load_settings('latexoutline.sublime-settings')
     show_ref_nb = lo_settings.get('show_ref_numbers')
+    show_env_names = lo_settings.get('show_environments_names')
     path = active_view.file_name()
     unfiltered_st_symlist, tex_files = get_symbols(path)
 
@@ -472,30 +474,31 @@ def light_refresh(lo_view, active_view, outline_type):
         shift = 1
 
     new_symlist = []
-    for sym in st_symlist:
+    for sym in unfiltered_st_symlist:
         item = {}
         key_unfound = True
         for i in range(len(symlist)):
             if sym["content"] == symlist[i]["content"]:
+                reg = symlist[i]["region"]
                 item=symlist.pop(i)
+                item["region"] = reg
                 key_unfound = False
                 break
 
         if key_unfound:
-            rgn, sym, type, sym = extract_from_sym(sym)
+            # rgn, sym, type, sym = extract_from_sym(sym)
             is_equation = False
-            fancy_content = new_lo_line(sym, "…", type, is_equation, 
+            fancy_content = new_lo_line(sym["content"], "…", sym["type"], is_equation, 
                                     show_ref_nb=show_ref_nb, 
                                     show_env_names=show_env_names, shift=shift)
-            item = {"region": (rgn.a, rgn.b),
-             "type": type,
-             "content": sym,
+            item = {"region": sym["region"],
+             "type": sym["type"],
+             "content": sym["content"],
              "is_equation": is_equation,
              "fancy_content": fancy_content,
              "file": path,
              "ref": "…",
              "env_type": ""}
-
 
         new_symlist.append(item)
         

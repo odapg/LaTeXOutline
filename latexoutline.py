@@ -178,7 +178,7 @@ class LatexOutlineEventHandler(EventListener):
 # ------- 
 # Partially refresh the outline when the LaTeX file is saved
 
-    def on_pre_save(self, view):
+    def on_post_save(self, view):
         if not get_sidebar_status(view.window()):
             return
         if not view.match_selector(0, "text.tex.latex"):
