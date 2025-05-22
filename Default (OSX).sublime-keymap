@@ -11,14 +11,13 @@
 //
 // * side: "left" or "right"
 
-
     { "keys": ["super+j", "a"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-        "args": {"side": "left", "outline_cycle": ["toc", "full"]},
+        "args": {"side": "left", "outline_cycle": ["toc", "full", "close"]},
     },
     { "keys": ["super+j", "e"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-        "args": {"side": "right", "outline_cycle": ["toc", "full", "close"]}
+        "args": {"side": "right", "outline_cycle": ["toc", "full"]}
     },
     { "keys": ["super+j", "z"], "command": "latex_outline_close_sidebar"},
 

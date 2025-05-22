@@ -247,13 +247,13 @@ def get_ref(sym, type, aux_data):
     elif type != "title":
         ts = normalize_for_comparison(sym)
         for i, data_item in enumerate(aux_data):
-            if data_item['entry_type'] != "section_type":
+            if data_item['entry_type'] != type:
                 continue
             # Minimal check, this is very unprecise, but should work in most cases
-            if ts == normalize_for_comparison(data_item['main_content']):
-                correct_item = aux_data.pop(i)
-                ref = correct_item['reference']
-                break
+            # if ts == normalize_for_comparison(data_item['main_content']):
+            correct_item = aux_data.pop(i)
+            ref = correct_item['reference']
+            break
 
     return ref
 
@@ -335,6 +335,7 @@ class GetEnvNamesTask(threading.Thread):
 
         path = lo_view.settings().get('current_file')
         out_data = get_out_file_data(path)
+        print(out_data)
 
         shift = 0
         if "part" in [sym["type"] for sym in symlist]:
@@ -744,9 +745,9 @@ def binary_search(array, x):
 def normalize_for_comparison(s):
     s = re.sub(r'\n', ' ', s)
     s = re.sub(r'\$[^\$]*?\$', '', s)
-    # s = re.sub(r'\\nonbreakingspace\s+', '~', s)
+    s = re.sub(r'\\nonbreakingspace\s+', '~', s)
     # s = re.sub(r'\\label\{[^\}]*\}\s*', '', s)
-    s = re.sub(r'\\[a-zA-Z]*(?:\{[a-zA-Z]*\})\s*', '', s)
+    s = re.sub(r'\\[a-zA-Z]*(?:\{[^\}]*\})\s*', '', s)
     s = re.sub(r'\s+', ' ', s)
     s = s.strip()
     return unicodedata.normalize("NFC", s)

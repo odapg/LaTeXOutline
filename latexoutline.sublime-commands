@@ -1,38 +1,34 @@
 [
   {
+    "caption": "LaTeXOutline: ToC on the Left",
+    "command": "latex_outline",
+    "args": {
+      "side": "left",
+      "outline_cycle": ["toc", "close"],
+    }
+  },
+  {
     "caption": "LaTeXOutline: ToC on the Right",
     "command": "latex_outline",
     "args": {
       "side": "right",
-      "outline_type": "toc",
-      "close_on_repeated_use": false
+      "outline_cycle": ["toc", "close"],
     }
   },
   {
-    "caption": "LaTeXOutline: toC on the Left",
+    "caption": "LaTeXOutline: ToC and labels on the Left",
     "command": "latex_outline",
     "args": {
       "side": "left",
-      "outline_type": "toc",
-      "close_on_repeated_use": false
+      "outline_cycle": ["full", "close"],
     }
   },
-    {
+  {
     "caption": "LaTeXOutline: ToC and labels on the Right",
     "command": "latex_outline",
     "args": {
       "side": "right",
-      "outline_type": "full",
-      "close_on_repeated_use": false
-    }
-  },
-  {
-    "caption": "LaTeXOutline: toC and labels on the Left",
-    "command": "latex_outline",
-    "args": {
-      "side": "left",
-      "outline_type": "full",
-      "close_on_repeated_use": false
+      "outline_cycle": ["full", "close"],
     }
   },
   {

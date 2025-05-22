@@ -3,6 +3,8 @@
 #### Version 2.4
 
 - Parses the `.out` file (when available) to present the final names of sections in the outline (when the `show_environments_names` is set to `true`).
+- Changed the commands variables in the `sublime-keymaps` and `sublime-commands` files.
+- The checks for section numbering have been relaxed to cover more cases.
 - Bugfix (detected commented sections).
 
 
@@ -17,6 +19,7 @@
 - Gathers environment names (Theorem, Figure, etc.).
 - Small corrections.
 
+
 #### Version 2.1
 
 - Adds a second outline containing the labels in addition to the table of contents.
@@ -25,6 +28,7 @@
 - Now also considers \section*{...} etc.
 - Corrects a bug occurring when two sections have the same name.
 - Small corrections.
+
 
 #### Version 2.0
 
@@ -39,6 +43,7 @@
 - The LaTeXOutline tab is now kept unchanged when activating a non-LaTeX file (such as a .log one).
 - Important internal rewriting (but a substancial part of the code still comes from [SublimeOutline](https://github.com/warmdev/SublimeOutline) ).
 - LaTeXOutline is now limited to ST4. 
+
 
 #### Version 1.0
 

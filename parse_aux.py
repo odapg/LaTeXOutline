@@ -137,7 +137,7 @@ def parse_writefile_line(line):
             return {
                 # 'source': 'writefile',
                 # 'type': file_type,
-                'entry_type': "section_type",
+                'entry_type': entry_type,
                 'reference': entry_number,
                 'main_content': entry_title,
                 # 'page_number': page_number

@@ -1,19 +1,23 @@
 [
-// Copy these lines to your User keymap and uncomment them to use the shortkeys 
-
-// // outline_type: "toc" toggles the table of contents
-// //               "full" toggles the table of contents and labels view
-// //               "both" switches between "toc" and "full"
-// // side: "left" or "right"
-// // close_on_repeated_use: true or false
+// // Copy these lines to your User keymap and uncomment them to use the shortkeys 
+// //
+// // * outline_cycle: a list that describes the various modes of the outline on repeated
+// //      use of the trigger
+// // ["toc"] toggles the table of contents and does not close it on the next trigger
+// // ["toc", "close"] toggles the table of contents and closes it on the next trigger
+// // ["toc", "full", "close"] cycles between the the table of contents, the fulls view,
+// //      and closing the outline
+// //  Possibilities are "toc" (only table of contents), "full" (toc with labels) and "close"
+// //
+// // * side: "left" or "right"
 
 //     { "keys": ["ctrl+j", "a"], "command": "latex_outline",
 //         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-//         "args": {"side": "left", "outline_type": "full", "close_on_repeated_use": true},
+//         "args": {"side": "left", "outline_cycle": ["toc", "full", "close"]},
 //     },
 //     { "keys": ["ctrl+j", "e"], "command": "latex_outline",
 //         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-//         "args": {"side": "right", "outline_type": "both", "close_on_repeated_use": false}
+//         "args": {"side": "right", "outline_cycle": ["toc", "full"]}
 //     },
 //     { "keys": ["ctrl+j", "z"], "command": "latex_outline_close_sidebar"},
 
