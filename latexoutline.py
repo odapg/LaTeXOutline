@@ -24,18 +24,16 @@ class LatexOutlineCommand(WindowCommand):
         view = self.window.active_view()
         return view and view.match_selector(0, "text.tex.latex")
 
-    def run(self, side="right", outline_type="toc", close_on_repeated_use=True):
+    # def run(self, side="right", outline_type="toc", close_on_repeated_use=True):
+    def run(self, side="right", outline_cycle=["toc", "close"]):
 
-        # If the outline view already exists:
-        # close the panel and possibly replace it
+        # If the outline view already exists
         if get_sidebar_status(self.window):
             lo_view, lo_group = get_sidebar_view_and_group(self.window)
 
             current_type = lo_view.settings().get('current_outline_type')
             current_side = lo_view.settings().get('side')
-
-            if current_side == side and current_type == outline_type and not close_on_repeated_use:
-                return
+            outline_type = next_in_cycle(current_type, outline_cycle)
 
             current_symlist = lo_view.settings().get('symlist')
             path = lo_view.settings().get('current_file')
@@ -54,22 +52,25 @@ class LatexOutlineCommand(WindowCommand):
                 fill_sidebar(lo_view, current_symlist, new_outline_type)
 
             else:
-                if outline_type != current_type and outline_type != "both":
+                if outline_type == current_type:
+                    return
+                elif outline_type != "close": #outline_type != "both":
                     new_outline_type = outline_type
-                elif outline_type == "both" and current_type == "toc":
-                    new_outline_type = "full"
-                elif outline_type == "both" and current_type == "full" and not close_on_repeated_use:
-                    new_outline_type = "toc"
+                # elif outline_type == "both" and current_type == "toc":
+                #     new_outline_type = "full"
+                # elif outline_type == "both" and current_type == "full" and not close_on_repeated_use:
+                #     new_outline_type = "toc"
                 else:
                     self.window.run_command('latex_outline_close_sidebar')
                     new_outline_type = None
-                    
+
                 if new_outline_type:
                     fill_sidebar(lo_view, current_symlist, new_outline_type)
                     lo_view.settings().set('current_outline_type', new_outline_type)
             
         # Open it otherwise
         else:
+            outline_type = outline_cycle[0]
             if outline_type == "full":
                 show_outline(self.window, side=side, outline_type="full")
             else:

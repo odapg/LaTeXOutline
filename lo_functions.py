@@ -244,11 +244,12 @@ def get_ref(sym, type, aux_data):
         ref = next((entry['reference'] for entry in aux_data
                                 if sym == entry['main_content']), '*')
     # Sections
-    else:
+    elif type != "title":
         ts = normalize_for_comparison(sym)
         for i, data_item in enumerate(aux_data):
-            # Minimal check, this is not very precise, but should work
-            # in most cases
+            if data_item['entry_type'] != "section_type":
+                continue
+            # Minimal check, this is very unprecise, but should work in most cases
             if ts == normalize_for_comparison(data_item['main_content']):
                 correct_item = aux_data.pop(i)
                 ref = correct_item['reference']
@@ -346,7 +347,6 @@ class GetEnvNamesTask(threading.Thread):
         if len(tex_files) == 0:
             tex_files = get_all_latex_files(self.active_view.file_name())
             
-        # Ici changer pour l'ouverture du fichier
         for file_path in tex_files:
             if not os.path.exists(file_path):
                 pass
@@ -366,8 +366,9 @@ class GetEnvNamesTask(threading.Thread):
                 sym = symlist[i]
                 if sym["file"] != file_path:
                     continue
-
-                if sym["type"] != "label" or sym["is_equation"]:
+                if sym["is_equation"]:
+                    return
+                if sym["type"] != "label":
                     if len(out_data)>0 and sym["type"] != "title":
                         # Adds section names from the .out file
                         for l, data in enumerate(out_data):
@@ -383,6 +384,7 @@ class GetEnvNamesTask(threading.Thread):
                                                                 show_ref_nb=True,
                                                                 show_env_names = show_env_names,
                                                                 shift=shift)
+                                break
                     else:
                         continue
 
@@ -742,9 +744,9 @@ def binary_search(array, x):
 def normalize_for_comparison(s):
     s = re.sub(r'\n', ' ', s)
     s = re.sub(r'\$[^\$]*?\$', '', s)
-    s = re.sub(r'\\nonbreakingspace\s+', '~', s)
-    s = re.sub(r'\\label\{[^\}]*\}\s*', '', s)
-    s = re.sub(r'\\[a-z]+', '', s)
+    # s = re.sub(r'\\nonbreakingspace\s+', '~', s)
+    # s = re.sub(r'\\label\{[^\}]*\}\s*', '', s)
+    s = re.sub(r'\\[a-zA-Z]*(?:\{[a-zA-Z]*\})\s*', '', s)
     s = re.sub(r'\s+', ' ', s)
     s = s.strip()
     return unicodedata.normalize("NFC", s)
@@ -862,3 +864,13 @@ def takealook(view, region):
         sublime.active_window().focus_view(view)
         sublime.set_timeout_async(lambda: view.erase_regions("takealook"), 5000)
 
+# --------------------------
+
+def next_in_cycle(item, my_list):
+    if not my_list:
+        return None 
+    if item in my_list:
+        index = my_list.index(item)
+        return my_list[(index + 1) % len(my_list)]
+    else:
+        return my_list[0]
