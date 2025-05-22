@@ -1,15 +1,12 @@
 [
+
 // Copy these lines to your User keymap and uncomment them to use the shortkeys 
-//
-// * outline_cycle: a list that describes the various modes of the outline on repeated
-//      use of the trigger
-// ["toc"] toggles the table of contents and does not close it on the next trigger
-// ["toc", "close"] toggles the table of contents and closes it on the next trigger
-// ["toc", "full", "close"] cycles between the the table of contents, the fulls view,
-//      and closing the outline
-//  Possibilities are "toc" (only table of contents), "full" (toc with labels) and "close"
-//
-// * side: "left" or "right"
+
+// outline_type: "toc" toggles the table of contents
+//               "full" toggles the table of contents and labels view
+//               "both" switches between "toc" and "full"
+// side: "left" or "right"
+// close_on_repeated_use: true or false
 
     { "keys": ["super+j", "a"], "command": "latex_outline",
         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],

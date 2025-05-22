@@ -47,6 +47,7 @@ def find_env_regions(contents, pos, pairs):
 
 # ------------------------------
 
+
 def get_lines(text, start, end):
     line_start = text.rfind('\n', 0, start)
     line_start = 0 if line_start == -1 else line_start + 1

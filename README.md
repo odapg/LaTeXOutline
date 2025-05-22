@@ -7,7 +7,7 @@ LaTeXOutline is an ST4 package which allows displaying a clickable table of cont
 It is intended to be used with the `article`, `book` and `beamer` LaTeX classes.
 In particular, the captured sectioning commands are: `part`, `chapter`, `section`, `subsection`, `subsubsection`, `subsubsubsection`, `paragraph` and `frametitle`.
 
-LaTeXOutline accepts multiple-files .tex documents.
+LaTeXOutline accepts multiple-files `.tex` documents.
 
 ![LaTeXOutline example](./images/example.png)
 

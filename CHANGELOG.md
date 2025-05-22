@@ -1,5 +1,6 @@
 ## LaTeXOutline for Sublime Text -- Changelog
 
+
 #### Version 2.4
 
 - Parses the `.out` file (when available) to present the final names of sections in the outline (when the `show_environments_names` is set to `true`).

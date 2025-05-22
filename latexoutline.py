@@ -54,12 +54,8 @@ class LatexOutlineCommand(WindowCommand):
             else:
                 if outline_type == current_type:
                     return
-                elif outline_type != "close": #outline_type != "both":
+                elif outline_type != "close": 
                     new_outline_type = outline_type
-                # elif outline_type == "both" and current_type == "toc":
-                #     new_outline_type = "full"
-                # elif outline_type == "both" and current_type == "full" and not close_on_repeated_use:
-                #     new_outline_type = "toc"
                 else:
                     self.window.run_command('latex_outline_close_sidebar')
                     new_outline_type = None

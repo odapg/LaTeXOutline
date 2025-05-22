@@ -1,0 +1,41 @@
+LaTeXOutline version 2.2
+------------------------
+
+Thank you for installing LaTeXOutline!
+
+Usage
+-----
+
+1. Adjust the settings and keybindings by using the Main Menu or the Command
+Palette.
+
+2. Open a LaTeX File.
+
+3a. Use the command Palette entries 'LaTeXOutline: ToC on the Right'
+(or 'Left'),
+'LaTeXOutline: ToC and labels on the Right' (or 'Left') to open the outline
+ pane. Use 'LaTeX Outline: Close sidebar' to close it.
+
+3b. Alternatively, use the corresponding shortcuts (by default, 'ctrl j, a',
+'ctrl j, e', 'ctrl j, z' on windows/linux and '⌘ j, a', '⌘ j, e', '⌘ j, z' on
+ mac). See the keybindings settings for more details.
+
+4a. Click on the titles in the LaTeXOutline tab to get to the corresponding
+place in your LaTeX file.
+
+4b. Click on a '⌖' sign to take a look at a part of the LaTeX file without
+moving the caret. Use the standard Sublime Text keybinding 'ctrl k, ctrl c'
+('⌘k, ⌘c' on mac) to go back to the original place (or switch tab if it
+changed).
+
+4c. Click on a '❐' sign to copy the corresponding label to the clipboard.
+
+4d. Click on a section's *bullet* in the LaTeXOutline tab to copy the
+section's corresponding label in the clipboard. A message is given in the
+status bar below to indicate if this label has been found.
+
+
+
+To report an issue, go to the Github page:
+https://github.com/odapg/LaTeXOutline/issues
+

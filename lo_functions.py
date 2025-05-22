@@ -464,7 +464,6 @@ def light_refresh(lo_view, active_view, outline_type):
     show_ref_nb = lo_settings.get('show_ref_numbers')
     path = active_view.file_name()
     unfiltered_st_symlist, tex_files = get_symbols(path)
-    # st_symlist = [sym for sym in unfiltered_st_symlist if not sym[1].startswith('\\')]
 
     shift = 0
     if "part" in [sym["type"] for sym in symlist]:
