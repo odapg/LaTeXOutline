@@ -3,7 +3,6 @@
 
 import os
 import sublime
-import sublime_plugin
 from sublime_plugin import TextCommand
 import re
 import unicodedata
@@ -12,8 +11,7 @@ from .parse_aux import parse_aux_file, extract_brace_group
 from .parse_out import parse_out_file
 from .detect_environment import (
     find_env_regions, filter_non_comment_regions, match_envs,
-    begin_re, end_re, is_comment )
-import time
+    begin_re, end_re, is_comment)
 import threading
 
 # -------------------------- Characters --------------------------
@@ -29,7 +27,7 @@ lo_chars = {
     'frametitle': '▫',
     'label': '›',
     'copy': '❐',
-    'takealook': '⌖',}
+    'takealook': '⌖'}
 
 # ----------------------------------------------------------------
 
@@ -77,9 +75,6 @@ def fill_symlist(base_symlist, path, view, lo_view):
     show_ref_nb = lo_settings.get('show_ref_numbers')
     show_env_names = lo_settings.get('show_environments_names')
 
-    # pattern = r'(?:Part|Chapter|Section|Subsection|Subsubsection|Paragraph|Frametitle)\*?:.*|[^\\].*'
-    # filtered_symlist = [x for x in unfiltered_symlist if re.match(pattern, x[1])]
-
     part_pattern = re.compile(r"^Part")
     chap_pattern = re.compile(r"^Chapter:")
     shift = 0
@@ -98,7 +93,7 @@ def fill_symlist(base_symlist, path, view, lo_view):
         file = item["file"]
 
         if show_ref_nb and aux_data:
-            ref= get_ref(sym, type, aux_data)
+            ref = get_ref(sym, type, aux_data)
         else:
             ref = None
         is_equation = False
@@ -158,7 +153,7 @@ def refresh_lo_view(lo_view, path, view, outline_type):
 def fill_sidebar(lo_view, sym_list, outline_type):
     '''Fills the contents of the outline view'''
     lo_view.run_command('latex_outline_fill_sidebar', 
-                                {'symlist': sym_list, 'outline_type': outline_type})
+                        {'symlist': sym_list, 'outline_type': outline_type})
 
 # --------------------------
 
@@ -183,7 +178,7 @@ def sync_lo_view():
     ''' sync the outline view with current place in the LaTeX file '''
 
     lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
-    if not lo_view:# or not lo_view.settings().get('outline_sync'):
+    if not lo_view:
         return
     if lo_view is not None:
         outline_type = lo_view.settings().get('current_outline_type')
@@ -194,7 +189,7 @@ def sync_lo_view():
         settings_sym_list = lo_view.settings().get('symlist')
         if outline_type == "toc":
             sym_list = [item for item in settings_sym_list
-                                if item["type"] != "label"]
+                        if item["type"] != "label"]
         else:
             sym_list = settings_sym_list
         
@@ -242,14 +237,15 @@ def get_ref(sym, type, aux_data):
     # Labels
     if type == "label":
         ref = next((entry['reference'] for entry in aux_data
-                                if sym == entry['main_content']), '*')
+                    if sym == entry['main_content']), '*')
     # Sections
     elif type != "title":
-        ts = normalize_for_comparison(sym)
+        
         for i, data_item in enumerate(aux_data):
             if data_item['entry_type'] != type:
                 continue
             # Minimal check, this is very unprecise, but should work in most cases
+            # ts = normalize_for_comparison(sym)
             # if ts == normalize_for_comparison(data_item['main_content']):
             correct_item = aux_data.pop(i)
             ref = correct_item['reference']
@@ -261,21 +257,21 @@ def get_ref(sym, type, aux_data):
 # --------------------------
 
 def new_lo_line(sym, ref, type, is_equation=False,
-                 env_type="Ref.", show_ref_nb=False, show_env_names=False, shift=0):
+                env_type="Ref.", show_ref_nb=False, show_env_names=False, shift=0):
     '''Creates the content to be displayed'''
     
     prefix = {
-    "title" : "❝",
-    "part" : lo_chars['part'] + ' ',
-    "chapter" : ' ' + lo_chars['chapter'] + ' ' if shift==2 else lo_chars['chapter'] + ' ',
-    "section" : ' ' * shift + lo_chars['section'] + ' ',
-    "subsection" : ' ' * (shift + 1) + lo_chars['subsection'] + ' ',
-    "subsubsection" : ' ' * (shift + 2) + lo_chars['subsubsection'] + ' ',
-    "paragraph" : ' ' * (shift + 3) + lo_chars['paragraph'] + ' ',
-    "frametitle" : lo_chars['frametitle'] + ' ',
-    "label" : '  ' + lo_chars['label'],
-    "copy" : ' ' + lo_chars['copy'], # + ' ',
-    "takealook" : ' ' + lo_chars['takealook'] + ' ',
+        "title": "❝",
+        "part": lo_chars['part'] + ' ',
+        "chapter": (' ' if shift == 2 else '') + lo_chars['chapter'] + ' ',
+        "section": ' ' * shift + lo_chars['section'] + ' ',
+        "subsection": ' ' * (shift + 1) + lo_chars['subsection'] + ' ',
+        "subsubsection": ' ' * (shift + 2) + lo_chars['subsubsection'] + ' ',
+        "paragraph": ' ' * (shift + 3) + lo_chars['paragraph'] + ' ',
+        "frametitle": lo_chars['frametitle'] + ' ',
+        "label": '  ' + lo_chars['label'],
+        "copy": ' ' + lo_chars['copy'],
+        "takealook": ' ' + lo_chars['takealook'] + ' ',
     }
     postfix = {"title" : "❞",}
     # Labels
@@ -283,16 +279,16 @@ def new_lo_line(sym, ref, type, is_equation=False,
         if show_ref_nb:
             if ref and is_equation:
                 new_sym_line = (prefix["label"] + 'Eq. (' + ref +')'
-                            + prefix["copy"] + prefix["takealook"] + '{' + sym + '}')
+                                + prefix["copy"] + prefix["takealook"] + '{' + sym + '}')
             elif ref:
                 new_sym_line = (prefix["label"] + env_type + ' ' + ref 
-                    + prefix["copy"] + prefix["takealook"] + '{' + sym + '}')
+                                + prefix["copy"] + prefix["takealook"] + '{' + sym + '}')
             else:
                 new_sym_line = (prefix["label"] + env_type + ' *' 
-                    + prefix["copy"] + prefix["takealook"] + '{' + sym + '}')
+                                + prefix["copy"] + prefix["takealook"] + '{' + sym + '}')
         elif show_env_names:
             new_sym_line = (prefix["label"] + env_type + ' ' + prefix["copy"] 
-                + prefix["takealook"] + '{' + sym + '}')
+                            + prefix["takealook"] + '{' + sym + '}')
         else:
             new_sym_line = prefix["label"] + sym + prefix["copy"] + prefix["takealook"]
     # Sections
@@ -353,7 +349,7 @@ class GetEnvNamesTask(threading.Thread):
             try:
                 with open(file_path, "r", encoding="utf-8") as f:
                     contents = f.read()
-            except:
+            except:  
                 pass
             # Look for matching \begin{...}/\end{...} pairs in the document
             st_begins = [(m.start(), m.end()) for m in re.finditer(begin_re, contents)]
@@ -383,7 +379,7 @@ class GetEnvNamesTask(threading.Thread):
                                                                 False,
                                                                 env_type="",
                                                                 show_ref_nb=True,
-                                                                show_env_names = show_env_names,
+                                                                show_env_names=show_env_names,
                                                                 shift=shift)
                                 break
                     else:
@@ -409,7 +405,7 @@ class GetEnvNamesTask(threading.Thread):
                                                     is_equation,
                                                     env_type=env_type,
                                                     show_ref_nb=True,
-                                                    show_env_names = show_env_names,
+                                                    show_env_names=show_env_names,
                                                     shift=shift)
 
         # If it changed in the meantime
@@ -435,10 +431,10 @@ def refresh_regions(lo_view, active_view):
     content = active_view.substr(sublime.Region(0, active_view.size()))
     new_symlist = extract_symbols_from_content(content, path)
 
-    for i in range(0,len(symlist)-1):
+    for i in range(0, len(symlist)-1):
         if symlist[i]["file"] != path:
             pass
-        first=None
+        first = None
         item = symlist[i]
         for k, it in enumerate(new_symlist):
             if it["content"] == item["content"]:
@@ -488,17 +484,18 @@ def light_refresh(lo_view, active_view, outline_type):
         if key_unfound:
             # rgn, sym, type, sym = extract_from_sym(sym)
             is_equation = False
-            fancy_content = new_lo_line(sym["content"], "…", sym["type"], is_equation, 
-                                    show_ref_nb=show_ref_nb, 
-                                    show_env_names=show_env_names, shift=shift)
+            fancy_content = new_lo_line(sym["content"], "…", sym["type"], 
+                                        is_equation, show_ref_nb=show_ref_nb, 
+                                        show_env_names=show_env_names, 
+                                        shift=shift)
             item = {"region": sym["region"],
-             "type": sym["type"],
-             "content": sym["content"],
-             "is_equation": is_equation,
-             "fancy_content": fancy_content,
-             "file": path,
-             "ref": "…",
-             "env_type": ""}
+                    "type": sym["type"],
+                    "content": sym["content"],
+                    "is_equation": is_equation,
+                    "fancy_content": fancy_content,
+                    "file": path,
+                    "ref": "…",
+                    "env_type": ""}
 
         new_symlist.append(item)
         
@@ -574,7 +571,7 @@ def arrange_layout(view, side):
 
     if side == "right":
         left_cols = [c * (1-width) for c in cols if c < 1.0]
-        right_cols = [1 - width , 1.0]
+        right_cols = [1 - width, 1.0]
         cols = left_cols + right_cols
         new_cell = [x_max, 0, x_max+1, y_max]
         cells.append(new_cell)
@@ -583,9 +580,9 @@ def arrange_layout(view, side):
         
     elif side == "left":
         right_cols = [width + c * (1-width) for c in cols if c > 0.0]
-        left_cols = [0.0, width ]
+        left_cols = [0.0, width]
         cols = left_cols + right_cols
-        cells = [ [c[0]+1, c[1], c[2]+1, c[3]] for c in cells]
+        cells = [[c[0]+1, c[1], c[2]+1, c[3]] for c in cells]
         new_cell = [0, 0, 1, y_max]
         cells.append(new_cell)
         new_layout = {"cols": cols, "rows": rows, "cells": cells}
@@ -610,10 +607,10 @@ def reduce_layout(window, lo_view, lo_group, sym_side):
     
     if sym_side == "right":
         new_cols = [c / (1-width) for c in cols if c < 1 - width] \
-                + [c for c in cols if c > 1 - width ]
+                + [c for c in cols if c > 1 - width]
     elif sym_side == "left":
-        new_cols = [c for c in cols if c < width ] \
-                + [(c - width) / (1-width) for c in cols if c >  width ]
+        new_cols = [c for c in cols if c < width] \
+                + [(c - width) / (1-width) for c in cols if c > width]
     else:
         return None
 
@@ -624,7 +621,7 @@ def reduce_layout(window, lo_view, lo_group, sym_side):
 def calc_width(view):
     ''' Return float width, which must be 0.0 < width < 1.0'''
     width = view.settings().get('outline_width', 0.3)
-    if isinstance(width, float) and width > 0 and width <1:
+    if isinstance(width, float) and width > 0 and width < 1:
         width = round(width, 2) + 0.00001
     else:
         sublime.error_message(f'Impossible to set outline_width to {width}.'
@@ -720,8 +717,8 @@ def extract_from_sym(item):
         type = match.group(1).lower()
         true_sym = match.group(2)
     else:
-       type = "label"
-       true_sym = sym
+        type = "label"
+        true_sym = sym
 
     return rgn, sym, type, true_sym
 

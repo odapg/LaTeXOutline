@@ -1,9 +1,7 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import argparse
 import re
-import codecs
 
 def decode_utf16_bookmark(raw_text):
     # Convert a LaTeX \376\377\0001\000.\000\040\... string to bytes
@@ -13,12 +11,12 @@ def decode_utf16_bookmark(raw_text):
 
 def parse_out_file(path):
 
-    out_pattern = re.compile(r'\\BOOKMARK\s+\[\d\]\[-\]\{([^}]*)\}\{([^}]*)\}\{([^}]*)\}%\s*(\d+)')
-
+    out_pattern = r'\\BOOKMARK\s+\[\d\]\[-\]\{([^}]*)\}\{([^}]*)\}\{([^}]*)\}%\s*(\d+)'
+    out_re = re.compile(out_pattern)
     out_data = []
     with open(path, 'r', encoding='utf-8') as f:
         for line in f:
-            match = out_pattern.search(line)
+            match = out_re.search(line)
             if match:
                 ref, raw_title, parent, num = match.groups()
                 ref_parts = ref.split(".", 1)

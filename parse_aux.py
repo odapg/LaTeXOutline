@@ -3,7 +3,6 @@
 
 import re
 
-
 # --------------------------
 def extract_brace_group(s, start):
     """Extract content inside balanced braces starting at position `start`."""
@@ -46,14 +45,13 @@ def parse_newlabel_line(line):
             else:
                 i += 1
 
-        type_field = fields[3] if len(fields) > 3 else None
-        type_main, type_sub = None, None
-
-        if type_field:
-            if '.' in type_field:
-                type_main, type_sub = type_field.split('.', 1)
-            else:
-                type_main = type_field
+        # type_field = fields[3] if len(fields) > 3 else None
+        # type_main, type_sub = None, None
+        # if type_field:
+        #     if '.' in type_field:
+        #         type_main, type_sub = type_field.split('.', 1)
+        #     else:
+        #         type_main = type_field
 
         return {
             # 'source': 'newlabel',
@@ -133,7 +131,6 @@ def parse_writefile_line(line):
 
             entry_title = re.sub(r'\\([a-zA-Z0-9]+)\s+\{', r'\\\1{', entry_title)
 
-
             return {
                 # 'source': 'writefile',
                 # 'type': file_type,
@@ -150,7 +147,7 @@ def parse_writefile_line(line):
 # ---- Main function ----
 
 def parse_aux_file(filename):
-    """Parse a .aux file and return a list of entries from \newlabel and \@writefile."""
+    """Parse a .aux file and return a list of entries from \newlabel and \\@writefile."""
     entries = []
 
     with open(filename, 'r', encoding='utf-8') as file:

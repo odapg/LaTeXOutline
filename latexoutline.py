@@ -2,12 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import sublime
-import sublime_plugin
-from sublime import Region, set_timeout_async
 from sublime_plugin import WindowCommand, EventListener
-from .lo_functions import * 
-import re
-import os
+from .lo_functions import *
 
 # ----------------------------------------------------------------------------#
 #                                                                             #
@@ -45,7 +41,8 @@ class LatexOutlineCommand(WindowCommand):
                 else:
                     new_outline_type = outline_type
                 
-                show_outline(self.window, side=side, outline_type=new_outline_type, path=path)
+                show_outline(self.window, side=side, 
+                             outline_type=new_outline_type, path=path)
                 lo_view, lo_group = get_sidebar_view_and_group(self.window)
                 lo_view.settings().set('symlist', current_symlist)
                 lo_view.settings().set('active_view', self.window.active_view().id())
@@ -107,7 +104,8 @@ class LatexOutlineRefreshCommand(WindowCommand):
         if lo_view:
             outline_type = lo_view.settings().get('current_outline_type')
             active_view_id = lo_view.settings().get('active_view')
-            possible_views = [v for v in self.window.views() if v.id() == active_view_id]
+            possible_views = [v for v in self.window.views() 
+                              if v.id() == active_view_id]
             active_view = None if not possible_views else possible_views[0]
             path = lo_view.settings().get('current_file')
         if outline_type and active_view and path:
@@ -166,7 +164,7 @@ class LatexOutlineEventHandler(EventListener):
                 return
             tex_files = lo_view.settings().get('file_list')
             if (view.file_name() is not None and tex_files is not None
-                     and view.file_name() in tex_files):
+                    and view.file_name() in tex_files):
                 lo_view.settings().set('current_file', view.file_name())
                 return
             else:
@@ -185,7 +183,6 @@ class LatexOutlineEventHandler(EventListener):
             return 
         if view.file_name() == None:
             return
-
 
         lo_view, lo_group = get_sidebar_view_and_group(view.window())
 
@@ -252,7 +249,7 @@ class LatexOutlineEventHandler(EventListener):
             label = symlist[row]["content"]
             sublime.set_clipboard(label)
             sublime.active_window().status_message(
-            f" ✓ Copied reference '{label}' to the clipboard")
+                f" ✓ Copied reference '{label}' to the clipboard")
             lo_view.sel().clear()
             sublime.active_window().focus_view(target_view)
             return
@@ -304,7 +301,8 @@ class LatexOutlineEventHandler(EventListener):
     def on_post_window_command(self, window, command_name, args):
         if not get_sidebar_status(window):
             return
-        if not window.active_view() or not window.active_view().match_selector(0, "text.tex.latex"):
+        if (not window.active_view() 
+                or not window.active_view().match_selector(0, "text.tex.latex")):
             return
         if command_name != "show_panel":
             return
@@ -312,5 +310,6 @@ class LatexOutlineEventHandler(EventListener):
             return
         lo_view, lo_group = get_sidebar_view_and_group(window)
         outline_type = lo_view.settings().get('current_outline_type')
-        refresh_lo_view(lo_view, window.active_view().file_name(), window.active_view(), outline_type)
+        refresh_lo_view(lo_view, window.active_view().file_name(), 
+                        window.active_view(), outline_type)
 

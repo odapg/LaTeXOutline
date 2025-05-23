@@ -3,11 +3,7 @@
 # Copyright (c) 2024 Sublime Text Packages
 # https://github.com/SublimeText/LaTeXTools
 
-import sublime
-import sublime_plugin
 import re
-import itertools
-import bisect
 
 # -------------------------------------------------
 
