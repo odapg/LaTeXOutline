@@ -1,6 +1,16 @@
 ## LaTeXOutline for Sublime Text -- Changelog
 
 
+#### Version 2.4.2
+
+- Bugfix (occasional numbering shift in presence of \section*)
+
+
+#### Version 2.4.1
+
+- Bugfix (incorrect outline updating when saving the .tex file)
+
+
 #### Version 2.4
 
 - Parses the `.out` file (when available) to present the final names of sections in the outline (when the `show_environments_names` is set to `true`).
