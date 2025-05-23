@@ -30,6 +30,19 @@ lo_chars = {
     'takealook': '⌖'}
 
 # ----------------------------------------------------------------
+symbol_patterns = [
+    ("title", "title", -1),
+    ("label", "label", 20),
+    ("part", "part", 0),
+    ("chapter", "chapter", 1),
+    ("section", "section", 2),
+    ("subsection", "subsection", 3),
+    ("subsubsection", "subsubsection", 4),
+    ("paragraph", "paragraph", 5),
+    ("frametitle", "frametitle", 3),
+]
+
+# ----------------------------------------------------------------
 
 # ----------------------------------------------------------------------------#
 #                                                                             #
@@ -91,6 +104,7 @@ def fill_symlist(base_symlist, path, view, lo_view):
         sym = item["content"]
         type = item["type"]
         file = item["file"]
+        level = item["level"]
 
         if show_ref_nb and aux_data:
             ref = get_ref(sym, type, aux_data)
@@ -111,6 +125,7 @@ def fill_symlist(base_symlist, path, view, lo_view):
              "file": file, 
              "fancy_content": fancy_content,
              "ref": ref,
+             "level": level,
              "env_type": ""}
             )
 
@@ -180,44 +195,54 @@ def sync_lo_view():
     lo_view, lo_group = get_sidebar_view_and_group(sublime.active_window())
     if not lo_view:
         return
-    if lo_view is not None:
-        outline_type = lo_view.settings().get('current_outline_type')
-        view = sublime.active_window().active_view()
 
-        # Refresh the regions (only) in the current symlist
-        refresh_regions(lo_view, view)
-        settings_sym_list = lo_view.settings().get('symlist')
-        if outline_type == "toc":
-            sym_list = [item for item in settings_sym_list
-                        if item["type"] != "label"]
-        else:
-            sym_list = settings_sym_list
-        
-        point = view.sel()[0].end()
-        file_path = view.file_name()
-        partial_symlist = [s for s in sym_list if s["file"] == file_path]
-        range_lows = [view.line(item['region'][0]).begin() for item in partial_symlist]
-        range_sorted = [0] + range_lows[1:len(range_lows)] + [view.size()]
-        partial_index = binary_search(range_sorted, point) - 1 
-        lo_line = sym_list.index(partial_symlist[partial_index])
-        # Highlight the previous (sub)section rather than the label
-        if outline_type != "toc":
-            for i in range(lo_line, -1, -1):
-                if sym_list[i]["type"] != "label":
-                    lo_line = i
-                    break
-                    
-        is_title = any([s for s in sym_list if s["type"] == "title"])
-        if is_title and lo_line != 0:
-            lo_line += 1
+    label_level = get_symbol_level("label")
+    
+    outline_type = lo_view.settings().get('current_outline_type')
+    if outline_type == "toc":
+        type_nb = label_level - 1
+    elif outline_type == "full":
+        type_nb = label_level
+    else:
+        type_nb = get_symbol_level(outline_type)
 
-        lo_point_start = lo_view.text_point_utf8(lo_line, 0)
-        lo_view.show_at_center(lo_point_start, animate=True)
-        lo_view.sel().clear()
-        lo_view.sel().add(lo_point_start)
-        # For some reason, 
-        # the following makes the outline highlighting more reliable.
-        lo_view.set_syntax_file('Packages/LaTeXOutline/latexoutline.sublime-syntax')
+    view = sublime.active_window().active_view()
+    
+    # Refresh the regions (only) in the current symlist
+    refresh_regions(lo_view, view)
+    settings_sym_list = lo_view.settings().get('symlist')
+
+    sym_list = [item for item in settings_sym_list
+                    if item["level"] <= type_nb]
+    
+    point = view.sel()[0].end()
+    file_path = view.file_name()
+    partial_symlist = [s for s in sym_list if s["file"] == file_path]
+    
+    range_lows = [view.line(item['region'][0]).begin() for item in partial_symlist]
+    range_sorted = [0] + range_lows[1:len(range_lows)] + [view.size()]
+    partial_index = binary_search(range_sorted, point) - 1 
+    lo_line = sym_list.index(partial_symlist[partial_index])
+
+    # Highlight the previous (sub)section rather than the label
+    max_level = min(type_nb, label_level - 1)
+    if outline_type != "toc":
+        for i in range(lo_line, -1, -1):
+            if sym_list[i]["level"] <= max_level:
+                lo_line = i
+                break
+    # A shift if there is a title
+    is_title = any([s for s in sym_list if s["type"] == "title"])
+    if is_title and lo_line != 0:
+        lo_line += 1
+
+    lo_point_start = lo_view.text_point_utf8(lo_line, 0)
+    lo_view.show_at_center(lo_point_start, animate=True)
+    lo_view.sel().clear()
+    lo_view.sel().add(lo_point_start)
+    # For some reason, 
+    # the following makes the outline highlighting more reliable.
+    lo_view.set_syntax_file('Packages/LaTeXOutline/latexoutline.sublime-syntax')
 
     view.settings().set('sync_in_progress', False)
 
@@ -370,7 +395,6 @@ class GetEnvNamesTask(threading.Thread):
                         for l, data in enumerate(out_data):
                             if data[0] == sym["type"] and data[1] == sym["ref"]:
                                 new_content = data[2]
-                                print(new_content)
                                 out_data.pop(l)
                                 symlist[i]["fancy_content"] = new_lo_line(
                                                                 new_content,
@@ -495,6 +519,7 @@ def light_refresh(lo_view, active_view, outline_type):
                     "fancy_content": fancy_content,
                     "file": path,
                     "ref": "…",
+                    "level": get_symbol_level(type),
                     "env_type": ""}
 
         new_symlist.append(item)
@@ -768,18 +793,6 @@ def get_contents_from_latex_file(file_path):
 
 def extract_symbols_from_content(content, file_path):
     symbols = []    
-    symbol_patterns = [
-        ("title", "title", -1),
-        ("label", "label", 6),
-        ("part", "part", 0),
-        ("chapter", "chapter", 1),
-        ("section", "section", 2),
-        ("subsection", "subsection", 3),
-        ("subsubsection", "subsubsection", 4),
-        ("paragraph", "paragraph", 5),
-        ("frametitle", "frametitle", 3),
-    ]
-
     for command, base_type, level in symbol_patterns:
         pattern = re.compile(rf"\\({command})(\*)?\s*\{{")
         for match in pattern.finditer(content):
@@ -797,9 +810,10 @@ def extract_symbols_from_content(content, file_path):
                     "type": sym_type,
                     "file": file_path,
                     "region": [match.start(), brace_end],
-                    "ref": "",
-                    "is_equation": False,
-                    "fancy_content" : ""
+                    "level": level,
+                    # "ref": "",
+                    # "is_equation": False,
+                    # "fancy_content" : ""
                 })
 
     return symbols
@@ -874,3 +888,12 @@ def next_in_cycle(item, my_list):
         return my_list[(index + 1) % len(my_list)]
     else:
         return my_list[0]
+
+# --------------------------
+
+def get_symbol_level(symbol):
+    for pattern in symbol_patterns:
+        if symbol == pattern[0]:
+            return pattern[2]
+    return 999
+

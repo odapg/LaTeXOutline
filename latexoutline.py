@@ -20,7 +20,6 @@ class LatexOutlineCommand(WindowCommand):
         view = self.window.active_view()
         return view and view.match_selector(0, "text.tex.latex")
 
-    # def run(self, side="right", outline_type="toc", close_on_repeated_use=True):
     def run(self, side="right", outline_cycle=["toc", "close"]):
 
         # If the outline view already exists
@@ -63,11 +62,8 @@ class LatexOutlineCommand(WindowCommand):
             
         # Open it otherwise
         else:
-            outline_type = outline_cycle[0]
-            if outline_type == "full":
-                show_outline(self.window, side=side, outline_type="full")
-            else:
-                show_outline(self.window, side=side, outline_type="toc")
+            show_outline(self.window, side=side, outline_type=outline_cycle[0])
+            
 
 
 # ----------------------------------------------------
@@ -222,6 +218,7 @@ class LatexOutlineEventHandler(EventListener):
         refresh_regions(lo_view, current_view)
         outline_type = lo_view.settings().get('current_outline_type')
         full_symlist = lo_view.settings().get('symlist')
+
         if outline_type == "toc":
             symlist = [sym for sym in full_symlist if sym["type"] != "label"]
         else:
