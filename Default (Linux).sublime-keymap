@@ -5,12 +5,14 @@
 // //      use of the trigger
 // // ["toc"] toggles the table of contents and does not close it on the next trigger
 // // ["toc", "close"] toggles the table of contents and closes it on the next trigger
-// // ["toc", "full", "close"] cycles between the the table of contents, the fulls view,
+// // ["toc", "full", "close"] cycles between the the table of contents, the full view,
 // //      and closing the outline
-// //  Possibilities are "toc" (only table of contents), "full" (toc with labels) and "close"
-
-// * side: "left" or "right"
-
+// //  Possibilities are "toc" (only the table of contents), "full" (toc with labels),
+// // "section", "subsection", etc. (toc with no finer subdivision than section, etc.) 
+// //  and "close"
+// //
+// // * side: "left" or "right"
+// //
 //     { "keys": ["ctrl+j", "a"], "command": "latex_outline",
 //         "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
 //         "args": {"side": "left", "outline_cycle": ["toc", "full", "close"]},
@@ -20,7 +22,7 @@
 //         "args": {"side": "right", "outline_cycle": ["toc", "full"]}
 //     },
 //     { "keys": ["ctrl+j", "z"], "command": "latex_outline_close_sidebar"},
-
+//
 // // Uncomment the lines below to neutralize the ["ctrl+j", "a"] and ["ctrl+j", "e"]
 // // shortcuts outside of LaTeX files
 //     { "keys": ["ctrl+j", "a"], "command": "noop",

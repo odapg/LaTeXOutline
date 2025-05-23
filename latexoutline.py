@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import sublime
+import time
 from sublime_plugin import WindowCommand, EventListener
 from .lo_functions import *
 
@@ -294,7 +295,7 @@ class LatexOutlineEventHandler(EventListener):
         window.settings().erase('lo_new_layout')
 
 # -------------- 
-# Completely refresh the view after .tex has been built (with LaTeXTools)
+# Completely refresh the view after .tex has been built (with build command)
 
     def on_post_window_command(self, window, command_name, args):
         if not get_sidebar_status(window):
@@ -302,12 +303,8 @@ class LatexOutlineEventHandler(EventListener):
         if (not window.active_view() 
                 or not window.active_view().match_selector(0, "text.tex.latex")):
             return
-        if command_name != "show_panel":
+        if command_name != "build":
             return
-        if not args["panel"] or args["panel"] != "output.latextools":
-            return
-        lo_view, lo_group = get_sidebar_view_and_group(window)
-        outline_type = lo_view.settings().get('current_outline_type')
-        refresh_lo_view(lo_view, window.active_view().file_name(), 
-                        window.active_view(), outline_type)
-
+        path = window.active_view().file_name()
+        aux_file = os.path.splitext(path)[0] + ".aux"
+        refresh_with_new_aux(aux_file, window, i=0, step=0)

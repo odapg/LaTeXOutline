@@ -5,6 +5,7 @@ import os
 import sublime
 from sublime_plugin import TextCommand
 import re
+import time
 import unicodedata
 from sublime import Region
 from .parse_aux import parse_aux_file, extract_brace_group
@@ -185,7 +186,7 @@ class LatexOutlineFillSidebarCommand(TextCommand):
         # else:
         #     symlist_contents = [item["fancy_content"] for item in symlist]
 
-        self.view.erase(edit, Region(0, self.view.size()))    
+        self.view.erase(edit, Region(0, self.view.size()))
         self.view.insert(edit, 0, "\n".join(symlist_contents))
         self.view.sel().clear()
        
@@ -387,7 +388,7 @@ class GetEnvNamesTask(threading.Thread):
                 if sym["is_equation"]:
                     return
                 if sym["type"] != "label":
-                    if len(out_data)>0 and sym["type"] != "title":
+                    if out_data is not None and len(out_data)>0 and sym["type"] != "title":
                         # Adds section names from the .out file
                         for l, data in enumerate(out_data):
                             if data[0] == sym["type"] and data[1] == sym["ref"]:
@@ -905,3 +906,28 @@ def level_filter(outline_type):
     else:
         type_nb = get_symbol_level(outline_type)
     return type_nb
+
+# -------------------
+
+def refresh_with_new_aux(aux_file=None, window=None, i=0, step=0):
+    if aux_file is None or window is None:
+        return
+    if i < 100:
+        i += 1
+        if os.path.exists(aux_file):
+            modification_time = os.path.getmtime(aux_file)
+            current_time = time.time()
+            if current_time - modification_time < 0.3:
+                new_step = 1
+            else:
+                new_step = 2 if step == 1 else 0
+            if new_step == 2:
+                lo_view, lo_group = get_sidebar_view_and_group(window)
+                outline_type = lo_view.settings().get('current_outline_type')
+                refresh_lo_view(lo_view, window.active_view().file_name(),
+                                window.active_view(), outline_type)
+                return
+        else:
+            new_step = 0
+        sublime.set_timeout_async(lambda: refresh_with_new_aux(aux_file, window, i, new_step), 300)
+    return
