@@ -97,7 +97,7 @@ def fill_symlist(base_symlist, path, view, lo_view):
         shift = 1
 
     aux_data = get_aux_file_data(path)
-    
+
     symlist = []
     for item in base_symlist:
         rgn = item["region"]
@@ -176,11 +176,14 @@ class LatexOutlineFillSidebarCommand(TextCommand):
     '''Text command for the latter'''
     def run(self, edit, symlist=None, outline_type="full"):
         
-        if outline_type == "toc":
-            symlist_contents = [item["fancy_content"] for item in symlist 
-                                if item["type"] != "label"]
-        else:
-            symlist_contents = [item["fancy_content"] for item in symlist]
+        type_nb = level_filter(outline_type)
+        symlist_contents = [item["fancy_content"] for item in symlist 
+                                if item["level"] <= type_nb]
+        # if outline_type == "toc":
+        #     symlist_contents = [item["fancy_content"] for item in symlist 
+        #                         if item["type"] != "label"]
+        # else:
+        #     symlist_contents = [item["fancy_content"] for item in symlist]
 
         self.view.erase(edit, Region(0, self.view.size()))    
         self.view.insert(edit, 0, "\n".join(symlist_contents))
@@ -199,12 +202,7 @@ def sync_lo_view():
     label_level = get_symbol_level("label")
     
     outline_type = lo_view.settings().get('current_outline_type')
-    if outline_type == "toc":
-        type_nb = label_level - 1
-    elif outline_type == "full":
-        type_nb = label_level
-    else:
-        type_nb = get_symbol_level(outline_type)
+    type_nb = level_filter(outline_type)
 
     view = sublime.active_window().active_view()
     
@@ -265,9 +263,8 @@ def get_ref(sym, type, aux_data):
                     if sym == entry['main_content']), '*')
     # Sections
     elif type != "title":
-        
         for i, data_item in enumerate(aux_data):
-            if data_item['entry_type'] != type:
+            if data_item['entry_type'] != type or data_item['reference'] == '':
                 continue
             # Minimal check, this is very unprecise, but should work in most cases
             # ts = normalize_for_comparison(sym)
@@ -519,7 +516,7 @@ def light_refresh(lo_view, active_view, outline_type):
                     "fancy_content": fancy_content,
                     "file": path,
                     "ref": "…",
-                    "level": get_symbol_level(type),
+                    "level": get_symbol_level(sym["type"]),
                     "env_type": ""}
 
         new_symlist.append(item)
@@ -897,3 +894,14 @@ def get_symbol_level(symbol):
             return pattern[2]
     return 999
 
+# --------------------------
+
+def level_filter(outline_type):
+    label_level = get_symbol_level("label")
+    if outline_type == "toc":
+        type_nb = label_level - 1
+    elif outline_type == "full":
+        type_nb = label_level
+    else:
+        type_nb = get_symbol_level(outline_type)
+    return type_nb

@@ -219,10 +219,11 @@ class LatexOutlineEventHandler(EventListener):
         outline_type = lo_view.settings().get('current_outline_type')
         full_symlist = lo_view.settings().get('symlist')
 
-        if outline_type == "toc":
-            symlist = [sym for sym in full_symlist if sym["type"] != "label"]
-        else:
-            symlist = full_symlist
+        type_nb = level_filter(outline_type)
+        # if outline_type == "toc":
+        symlist = [sym for sym in full_symlist if sym["level"] <= type_nb]
+        # else:
+        #     symlist = full_symlist
 
         is_title = any([s for s in symlist if s["type"] == "title"])
         if is_title and row != 0:
