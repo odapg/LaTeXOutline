@@ -834,21 +834,30 @@ def navigate_to(view, pos, lo_view):
 
 # --------------------------
 
-def takealook_display(file, region):
+def takealook(file, region, window):
     contents = get_contents_from_latex_file(file)
-    st_begins = [(m.start(), m.end()) for m in re.finditer(begin_re, contents)]
-    st_ends = [(m.start(), m.end()) for m in re.finditer(end_re, contents)]
-    begins = filter_non_comment_regions(contents, st_begins)
-    ends = filter_non_comment_regions(contents, st_ends)
-    pairs = match_envs(contents, begins, ends)
+    # st_begins = [(m.start(), m.end()) for m in re.finditer(begin_re, contents)]
+    # st_ends = [(m.start(), m.end()) for m in re.finditer(end_re, contents)]
+    # begins = filter_non_comment_regions(contents, st_begins)
+    # ends = filter_non_comment_regions(contents, st_ends)
+    # pairs = match_envs(contents, begins, ends)
     
-    env_regions = find_env_regions(contents, region[0], pairs)
-    if (len(env_regions) == 0 
-        or contents[env_regions[0][0]:env_regions[0][1]] == "document"):
-        to_display = extract_lines(contents, region[0], before=5, after=20)
-    else:
-        to_display = contents[env_regions[2][0]:env_regions[2][1]]
-    return to_display
+    panel = window.create_output_panel('lo_takealook')
+    
+    # env_regions = find_env_regions(contents, region[0], pairs)
+    # sec_type = (len(env_regions) == 0 
+    #             or contents[env_regions[0][0]:env_regions[0][1]] == "document")
+    # if sec_type:
+    to_display = contents
+    # else:
+    #     to_display = contents[env_regions[2][0]:env_regions[2][1]]
+    panel.run_command('lo_insert_in_view', {'text': to_display})
+    window.run_command('show_panel', {'panel': 'output.lo_takealook'})
+    # if sec_type:
+    st_region = sublime.Region(region[0], region[0])
+    panel.sel().add(st_region)
+    panel.show_at_center(st_region)
+    panel.set_syntax_file('Packages/LaTeX/LaTeX.sublime-syntax')
     
 # --------------------------
 

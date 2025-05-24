@@ -251,11 +251,7 @@ class LatexOutlineEventHandler(EventListener):
 
         # If the takealook symbol ⌖ was pressed
         if 'takealook' in sel_scope:
-            to_display = takealook_display(file, region)
-            panel = window.create_output_panel('lo_takealook')
-            panel.run_command('lo_insert_in_view', {'text': to_display})
-            window.run_command('show_panel', {'panel': 'output.lo_takealook'})
-            panel.set_syntax_file('Packages/LaTeX/LaTeX.sublime-syntax')
+            takealook(file, region, window)
             return
 
         # otherwise, go to the corresponding region or copy the section label
