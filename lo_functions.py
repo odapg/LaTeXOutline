@@ -836,24 +836,9 @@ def navigate_to(view, pos, lo_view):
 
 def takealook(file, region, window):
     contents = get_contents_from_latex_file(file)
-    # st_begins = [(m.start(), m.end()) for m in re.finditer(begin_re, contents)]
-    # st_ends = [(m.start(), m.end()) for m in re.finditer(end_re, contents)]
-    # begins = filter_non_comment_regions(contents, st_begins)
-    # ends = filter_non_comment_regions(contents, st_ends)
-    # pairs = match_envs(contents, begins, ends)
-    
     panel = window.create_output_panel('lo_takealook')
-    
-    # env_regions = find_env_regions(contents, region[0], pairs)
-    # sec_type = (len(env_regions) == 0 
-    #             or contents[env_regions[0][0]:env_regions[0][1]] == "document")
-    # if sec_type:
-    to_display = contents
-    # else:
-    #     to_display = contents[env_regions[2][0]:env_regions[2][1]]
-    panel.run_command('lo_insert_in_view', {'text': to_display})
+    panel.run_command('lo_insert_in_view', {'text': contents})
     window.run_command('show_panel', {'panel': 'output.lo_takealook'})
-    # if sec_type:
     st_region = sublime.Region(region[0], region[0])
     panel.sel().add(st_region)
     panel.show_at_center(st_region)
@@ -924,21 +909,4 @@ class LoInsertInView(TextCommand):
         self.view.erase(edit, Region(0, self.view.size()))
         self.view.insert(edit, 0, text)
         self.view.sel().clear()
-
-# -------------------
-
-def extract_lines(text, pos, before=5, after=5):
-    '''extracts lines before and after pos in text'''
-    lines = text.splitlines()
-    total_chars = 0
-    current_line_index = 0
-    for i, line in enumerate(lines):
-        total_chars += len(line) + 1
-        if total_chars > pos:
-            current_line_index = i
-            break
-    start_index = max(0, current_line_index - before)
-    end_index = min(len(lines), current_line_index + after + 1)
-    context_lines = lines[start_index:end_index]
-    return "\n".join(context_lines)
 
