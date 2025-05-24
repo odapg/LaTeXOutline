@@ -38,6 +38,7 @@ def find_env_regions(contents, pos, pairs):
     end_region = extract_end_region(end)
     new_regions.append(begin_region)
     new_regions.append(end_region)
+    new_regions.append([begin[0],end[1]])
 
     return new_regions
 

@@ -160,6 +160,7 @@ class LatexOutlineEventHandler(EventListener):
             if (view.file_name() is not None and tex_files is not None
                     and view.file_name() in tex_files):
                 lo_view.settings().set('current_file', view.file_name())
+                lo_view.settings().set('active_view', view.id())
                 return
             else:
                 lo_view.settings().set('current_file', view.file_name())
@@ -244,7 +245,7 @@ class LatexOutlineEventHandler(EventListener):
             sublime.active_window().status_message(
                 f" ✓ Copied reference '{label}' to the clipboard")
             lo_view.sel().clear()
-            sublime.active_window().focus_view(target_view)
+            sublime.active_window().focus_view(current_view)
             return
 
         # If the takealook symbol ◎ was pressed
@@ -263,9 +264,9 @@ class LatexOutlineEventHandler(EventListener):
             if not target_view:
                 current_view.window().focus_view(current_view)
                 target_view = sublime.active_window().open_file(file)
-                sublime.set_timeout(lambda: navigate_to(target_view, start), 500)
+                sublime.set_timeout(lambda: navigate_to(target_view, start, lo_view), 500)
             else:
-                navigate_to(target_view, start)          
+                navigate_to(target_view, start, lo_view)          
 
 # ------- 
 # Arranges the layout when one closes the outline manually

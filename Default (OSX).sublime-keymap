@@ -13,22 +13,22 @@
 //
 // * side: "left" or "right"
 //
-    // { "keys": ["super+j", "a"], "command": "latex_outline",
-    //     "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-    //     "args": {"side": "left", "outline_cycle": ["toc", "full", "close"]},
-    // },
-    // { "keys": ["super+j", "e"], "command": "latex_outline",
-    //     "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
-    //     "args": {"side": "right", "outline_cycle": ["toc", "full", "close"]}
-    // },
-    // { "keys": ["super+j", "z"], "command": "latex_outline_close_sidebar"},
+    { "keys": ["super+j", "a"], "command": "latex_outline",
+        "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
+        "args": {"side": "left", "outline_cycle": ["toc", "full", "close"]},
+    },
+    { "keys": ["super+j", "e"], "command": "latex_outline",
+        "context": [{ "key": "selector", "operator": "equal", "operand": "text.tex.latex" }],
+        "args": {"side": "right", "outline_cycle": ["toc", "full", "close"]}
+    },
+    { "keys": ["super+j", "z"], "command": "latex_outline_close_sidebar"},
 //    
 // Uncomment the lines below to neutralize the ["super+j", "a"] and ["super+j", "e"]
 // shortcuts outside of LaTeX files
-    // { "keys": ["super+j", "a"], "command": "noop",
-    //     "context": [{ "key": "selector", "operator": "not_equal", "operand": "text.tex.latex" }],
-    // },
-    // { "keys": ["super+j", "e"], "command": "noop",
-    //     "context": [{ "key": "selector", "operator": "not_equal", "operand": "text.tex.latex" }],
-    // },
+    { "keys": ["super+j", "a"], "command": "noop",
+        "context": [{ "key": "selector", "operator": "not_equal", "operand": "text.tex.latex" }],
+    },
+    { "keys": ["super+j", "e"], "command": "noop",
+        "context": [{ "key": "selector", "operator": "not_equal", "operand": "text.tex.latex" }],
+    },
 ]

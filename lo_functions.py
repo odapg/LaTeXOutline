@@ -180,12 +180,6 @@ class LatexOutlineFillSidebarCommand(TextCommand):
         type_nb = level_filter(outline_type)
         symlist_contents = [item["fancy_content"] for item in symlist 
                                 if item["level"] <= type_nb]
-        # if outline_type == "toc":
-        #     symlist_contents = [item["fancy_content"] for item in symlist 
-        #                         if item["type"] != "label"]
-        # else:
-        #     symlist_contents = [item["fancy_content"] for item in symlist]
-
         self.view.erase(edit, Region(0, self.view.size()))
         self.view.insert(edit, 0, "\n".join(symlist_contents))
         self.view.sel().clear()
@@ -218,22 +212,25 @@ def sync_lo_view():
     file_path = view.file_name()
     partial_symlist = [s for s in sym_list if s["file"] == file_path]
     
-    range_lows = [view.line(item['region'][0]).begin() for item in partial_symlist]
-    range_sorted = [0] + range_lows[1:len(range_lows)] + [view.size()]
-    partial_index = binary_search(range_sorted, point) - 1 
-    lo_line = sym_list.index(partial_symlist[partial_index])
+    if len(partial_symlist) >0: 
+        range_lows = [view.line(item['region'][0]).begin() for item in partial_symlist]
+        range_sorted = [0] + range_lows[1:len(range_lows)] + [view.size()]
+        partial_index = binary_search(range_sorted, point) - 1
+        lo_line = sym_list.index(partial_symlist[partial_index])
 
-    # Highlight the previous (sub)section rather than the label
-    max_level = min(type_nb, label_level - 1)
-    if outline_type != "toc":
-        for i in range(lo_line, -1, -1):
-            if sym_list[i]["level"] <= max_level:
-                lo_line = i
-                break
-    # A shift if there is a title
-    is_title = any([s for s in sym_list if s["type"] == "title"])
-    if is_title and lo_line != 0:
-        lo_line += 1
+        # Highlight the previous (sub)section rather than the label
+        max_level = min(type_nb, label_level - 1)
+        if outline_type != "toc":
+            for i in range(lo_line, -1, -1):
+                if sym_list[i]["level"] <= max_level:
+                    lo_line = i
+                    break
+        # A shift if there is a title
+        is_title = any([s for s in sym_list if s["type"] == "title"])
+        if is_title and lo_line != 0:
+            lo_line += 1
+    else:
+        lo_line=0
 
     lo_point_start = lo_view.text_point_utf8(lo_line, 0)
     lo_view.show_at_center(lo_point_start, animate=True)
@@ -824,15 +821,16 @@ def equation_test(type):
 
 # --------------------------
 
-def navigate_to(view, pos):
+def navigate_to(view, pos, lo_view):
     if view.is_loading():
-        sublime.set_timeout(lambda: navigate_to(view, pos), 100)
+        sublime.set_timeout(lambda: navigate_to(view, pos, lo_view), 100)
     else:
         region = sublime.Region(pos, pos)
         view.sel().clear()
         view.sel().add(region)
         view.window().focus_view(view)
         view.show_at_center(region)
+        lo_view.settings().set('active_view', view.id())
 
 # --------------------------
 
@@ -887,7 +885,7 @@ def level_filter(outline_type):
 def refresh_with_new_aux(aux_file=None, window=None, i=0, step=0):
     if aux_file is None or window is None:
         return
-    if i < 100:
+    if i < 50:
         i += 1
         if os.path.exists(aux_file):
             modification_time = os.path.getmtime(aux_file)
