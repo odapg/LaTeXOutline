@@ -834,21 +834,22 @@ def navigate_to(view, pos, lo_view):
 
 # --------------------------
 
-def takealook(view, region):
-    if view.is_loading():
-        sublime.set_timeout(lambda: takealook(view, region), 100)
+def takealook_display(file, region):
+    contents = get_contents_from_latex_file(file)
+    st_begins = [(m.start(), m.end()) for m in re.finditer(begin_re, contents)]
+    st_ends = [(m.start(), m.end()) for m in re.finditer(end_re, contents)]
+    begins = filter_non_comment_regions(contents, st_begins)
+    ends = filter_non_comment_regions(contents, st_ends)
+    pairs = match_envs(contents, begins, ends)
+    
+    env_regions = find_env_regions(contents, region[0], pairs)
+    if (len(env_regions) == 0 
+        or contents[env_regions[0][0]:env_regions[0][1]] == "document"):
+        to_display = extract_lines(contents, region[0], before=5, after=20)
     else:
-        view.add_regions(
-                "takealook", 
-                view.lines(Region(region[0],region[1])),
-                icon='Packages/LaTeXOutline/images/chevron.png',
-                scope='region.bluish',
-                flags=1024,
-            )
-        view.show_at_center(region[0])
-        sublime.active_window().focus_view(view)
-        sublime.set_timeout_async(lambda: view.erase_regions("takealook"), 5000)
-
+        to_display = contents[env_regions[2][0]:env_regions[2][1]]
+    return to_display
+    
 # --------------------------
 
 def next_in_cycle(item, my_list):
@@ -906,3 +907,29 @@ def refresh_with_new_aux(aux_file=None, window=None, i=0, step=0):
         sublime.set_timeout_async(
             lambda: refresh_with_new_aux(aux_file, window, i, new_step), 300)
     return
+
+# -------------------
+
+class LoInsertInView(TextCommand):
+    def run(self, edit, text):
+        self.view.erase(edit, Region(0, self.view.size()))
+        self.view.insert(edit, 0, text)
+        self.view.sel().clear()
+
+# -------------------
+
+def extract_lines(text, pos, before=5, after=5):
+    '''extracts lines before and after pos in text'''
+    lines = text.splitlines()
+    total_chars = 0
+    current_line_index = 0
+    for i, line in enumerate(lines):
+        total_chars += len(line) + 1
+        if total_chars > pos:
+            current_line_index = i
+            break
+    start_index = max(0, current_line_index - before)
+    end_index = min(len(lines), current_line_index + after + 1)
+    context_lines = lines[start_index:end_index]
+    return "\n".join(context_lines)
+

@@ -195,7 +195,8 @@ class LatexOutlineEventHandler(EventListener):
 # or copy the label when asked
                 
     def on_selection_modified(self, view):
-        if 'latexoutline' not in view.settings().get('syntax'):
+        view_syntax = view.settings().get('syntax')
+        if not view_syntax or 'latexoutline' not in view_syntax:
             return
         if view.window().get_view_index(view)[0] == -1:
             return
@@ -248,12 +249,13 @@ class LatexOutlineEventHandler(EventListener):
             sublime.active_window().focus_view(current_view)
             return
 
-        # If the takealook symbol ◎ was pressed
+        # If the takealook symbol ⌖ was pressed
         if 'takealook' in sel_scope:
-            if not target_view:
-                current_view.window().focus_view(current_view)
-                target_view = sublime.active_window().open_file(file)
-            takealook(target_view, region)
+            to_display = takealook_display(file, region)
+            panel = window.create_output_panel('lo_takealook')
+            panel.run_command('lo_insert_in_view', {'text': to_display})
+            window.run_command('show_panel', {'panel': 'output.lo_takealook'})
+            panel.set_syntax_file('Packages/LaTeX/LaTeX.sublime-syntax')
             return
 
         # otherwise, go to the corresponding region or copy the section label
