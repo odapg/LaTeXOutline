@@ -1,6 +1,12 @@
 ## LaTeXOutline for Sublime Text -- Changelog
 
 
+#### Version 2.4.3
+
+- Now allows to limit the outline to sections/subsections and above (see the `.sublime-keymap` file)
+- Refactored the "refresh after build" feature
+
+
 #### Version 2.4.2
 
 - Bugfix (occasional numbering shift in presence of \section*)

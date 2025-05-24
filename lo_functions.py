@@ -504,7 +504,6 @@ def light_refresh(lo_view, active_view, outline_type):
                 break
 
         if key_unfound:
-            # rgn, sym, type, sym = extract_from_sym(sym)
             is_equation = False
             fancy_content = new_lo_line(sym["content"], "…", sym["type"], 
                                         is_equation, show_ref_nb=show_ref_nb, 
@@ -726,27 +725,6 @@ def get_out_file_data(path):
            
 # --------------------------
 
-def extract_from_sym(item):
-    rgn = item[0]
-    sym = re.sub(r'\n', ' ', item[1])
-
-    # Get the ST symbol entry type and content
-    pattern = (
-        r'^(Part\*?|Chapter\*?|Section\*?|Subsection\*?|'
-        r'Subsubsection\*?|Paragraph\*?|Frametitle): (.+)'
-    )
-    match = re.match(pattern, sym)
-    if match:
-        type = match.group(1).lower()
-        true_sym = match.group(2)
-    else:
-        type = "label"
-        true_sym = sym
-
-    return rgn, sym, type, true_sym
-
-# --------------------------
-
 def binary_search(array, x):
     '''
     Given a sorted array, returns the location of x if inserted into the array
@@ -809,9 +787,6 @@ def extract_symbols_from_content(content, file_path):
                     "file": file_path,
                     "region": [match.start(), brace_end],
                     "level": level,
-                    # "ref": "",
-                    # "is_equation": False,
-                    # "fancy_content" : ""
                 })
 
     return symbols
@@ -922,6 +897,7 @@ def refresh_with_new_aux(aux_file=None, window=None, i=0, step=0):
             else:
                 new_step = 2 if step == 1 else 0
             if new_step == 2:
+                # .aux file has been recently modified, but not for the past 0.3s
                 lo_view, lo_group = get_sidebar_view_and_group(window)
                 outline_type = lo_view.settings().get('current_outline_type')
                 refresh_lo_view(lo_view, window.active_view().file_name(),
@@ -929,5 +905,6 @@ def refresh_with_new_aux(aux_file=None, window=None, i=0, step=0):
                 return
         else:
             new_step = 0
-        sublime.set_timeout_async(lambda: refresh_with_new_aux(aux_file, window, i, new_step), 300)
+        sublime.set_timeout_async(
+            lambda: refresh_with_new_aux(aux_file, window, i, new_step), 300)
     return

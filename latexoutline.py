@@ -36,10 +36,7 @@ class LatexOutlineCommand(WindowCommand):
 
             if side != current_side:
                 self.window.run_command('latex_outline_close_sidebar')
-                if outline_type == "both":
-                    new_outline_type = current_type
-                else:
-                    new_outline_type = outline_type
+                new_outline_type = outline_cycle[0]
                 
                 show_outline(self.window, side=side, 
                              outline_type=new_outline_type, path=path)
@@ -221,10 +218,7 @@ class LatexOutlineEventHandler(EventListener):
         full_symlist = lo_view.settings().get('symlist')
 
         type_nb = level_filter(outline_type)
-        # if outline_type == "toc":
         symlist = [sym for sym in full_symlist if sym["level"] <= type_nb]
-        # else:
-        #     symlist = full_symlist
 
         is_title = any([s for s in symlist if s["type"] == "title"])
         if is_title and row != 0:
@@ -298,10 +292,10 @@ class LatexOutlineEventHandler(EventListener):
 # Completely refresh the view after .tex has been built (with build command)
 
     def on_post_window_command(self, window, command_name, args):
-        if not get_sidebar_status(window):
-            return
         if (not window.active_view() 
                 or not window.active_view().match_selector(0, "text.tex.latex")):
+            return
+        if not get_sidebar_status(window):
             return
         if command_name != "build":
             return
