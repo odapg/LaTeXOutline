@@ -29,7 +29,7 @@ LaTeXOutline accepts multiple-files `.tex` documents.
 
 3. Click on the titles in the LaTeXOutline tab to get to the corresponding place in your LaTeX file.
 
-   Click on a `⌖` sign to take a look at a part of the LaTeX file without moving the caret. Use the standard Sublime Text keybinding `ctrl k, ctrl c` (`⌘ k, ⌘ c` on mac) to go back to the original place (or switch tab if it changed).
+   Click on a `⌖` sign to take a look at a part of the LaTeX file in a panel. Use `Esc` to close the panel.
 
    Click on a `❐` sign to copy the corresponding label to the clipboard.
 

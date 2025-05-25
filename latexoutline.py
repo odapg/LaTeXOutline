@@ -83,6 +83,7 @@ class LatexOutlineCloseSidebarCommand(WindowCommand):
             self.window.run_command('close_file')
             self.window.set_layout(lo_new_layout)
             self.window.focus_view(active_view)
+            self.window.destroy_output_panel('lo_takealook')
 
 
 # ----------------------------------------------------
@@ -208,7 +209,7 @@ class LatexOutlineEventHandler(EventListener):
         current_view = None if not possible_views else possible_views[0]
 
         # Position and nature of the selected item in the outline
-        if len(lo_view.sel()) == 0:
+        if len(lo_view.sel()) == 0 or current_view is None:
             return None
         lo_view_sel = lo_view.sel()[0]
         (row, col) = lo_view.rowcol(lo_view.sel()[0].begin())
@@ -251,7 +252,7 @@ class LatexOutlineEventHandler(EventListener):
 
         # If the takealook symbol ⌖ was pressed
         if 'takealook' in sel_scope:
-            takealook(file, region, window)
+            takealook(file, region, current_view)
             return
 
         # otherwise, go to the corresponding region or copy the section label

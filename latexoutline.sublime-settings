@@ -24,11 +24,15 @@
   // Width proportion for the outline sidebar: keep between 0.1 and 0.9
   "outline_width": 0.22,
 
+  // Wrap the lines in the outline view
+  "line_wrap": true,  
+
   // To customize
   "font_face": "",
   "font_size": 13,
   "gutter": false,
   "margin": 3,
+  
 
   // The following settings are used by the outline view. 
   // It is recommended to leave them as they are.

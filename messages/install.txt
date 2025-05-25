@@ -23,10 +23,8 @@ Palette.
 4a. Click on the titles in the LaTeXOutline tab to get to the corresponding
 place in your LaTeX file.
 
-4b. Click on a '⌖' sign to take a look at a part of the LaTeX file without
-moving the caret. Use the standard Sublime Text keybinding 'ctrl k, ctrl c'
-('⌘k, ⌘c' on mac) to go back to the original place (or switch tab if it
-changed).
+4b. Click on a '⌖' sign to take a look at a part of the LaTeX file in a panel.
+Use 'Esc' to close the panel.
 
 4c. Click on a '❐' sign to copy the corresponding label to the clipboard.
 

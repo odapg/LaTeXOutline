@@ -570,6 +570,7 @@ def set_proper_scheme(view):
     if view.settings().get('color_scheme') == lo_settings.get('color_scheme'):
         return
     view.settings().set('color_scheme', lo_settings.get('outline_color_scheme'))
+    view.settings().set('word_wrap', lo_settings.get('line_wrap'))
 
 # --------------------------
 
@@ -834,16 +835,29 @@ def navigate_to(view, pos, lo_view):
 
 # --------------------------
 
-def takealook(file, region, window):
+def takealook(file, region, view):
+    window = view.window()
     contents = get_contents_from_latex_file(file)
-    panel = window.create_output_panel('lo_takealook')
+    panel = window.find_output_panel('lo_takealook')
+    if panel is None:
+        panel = window.create_output_panel('lo_takealook')
     panel.run_command('lo_insert_in_view', {'text': contents})
     window.run_command('show_panel', {'panel': 'output.lo_takealook'})
     st_region = sublime.Region(region[0], region[0])
     panel.sel().add(st_region)
     panel.show_at_center(st_region)
+    panel.add_regions(
+            "takealook", 
+            panel.lines(Region(region[0],region[1])),
+            icon='Packages/LaTeXOutline/images/chevron.png',
+            scope='region.bluish',
+            flags=1024,
+        )
+    sublime.set_timeout_async(lambda: panel.erase_regions("takealook"), 5000)
     panel.set_syntax_file('Packages/LaTeX/LaTeX.sublime-syntax')
-    
+    panel.set_read_only(True)
+    window.focus_view(view)
+
 # --------------------------
 
 def next_in_cycle(item, my_list):
