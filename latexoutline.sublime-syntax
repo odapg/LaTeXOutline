@@ -2,7 +2,7 @@
 ---
 name: LaTeXOutline
 file_extensions: latexoutline
-scope: text.latexoutline
+scope: source.latexoutline
 hidden:  true
 variables:
   part_char: '■'

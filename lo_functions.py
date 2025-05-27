@@ -329,7 +329,7 @@ def new_lo_line(sym, ref, type, is_equation=False,
         new_sym_line = re.sub(r'\\(emph|textbf)\{([^}]*)\}', r'\2', new_sym_line)
         new_sym_line = re.sub(r'\\label\{[^\}]*\}\s*', '', new_sym_line)
         new_sym_line = re.sub(r'\\mbox\{([^\}]*)\}', r'\1', new_sym_line)
-        new_sym_line = re.sub(r'\s*~\s*', r' ', new_sym_line)
+        new_sym_line = re.sub(r'\s*~\s*', r'', new_sym_line)
 
     return new_sym_line
 
@@ -848,7 +848,7 @@ def takealook(file, region, view):
     panel.show_at_center(st_region)
     panel.add_regions(
             "takealook", 
-            panel.lines(Region(region[0],region[1])),
+            panel.lines(sublime.Region(region[0],region[1])),
             icon='Packages/LaTeXOutline/images/chevron.png',
             scope='region.bluish',
             flags=1024,
