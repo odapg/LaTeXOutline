@@ -3,7 +3,7 @@
 
 import sublime
 import time
-from sublime_plugin import WindowCommand, EventListener
+from sublime_plugin import TextCommand, WindowCommand, EventListener
 from .lo_functions import *
 
 # ----------------------------------------------------------------------------#
@@ -29,6 +29,7 @@ class LatexOutlineCommand(WindowCommand):
 
             current_type = lo_view.settings().get('current_outline_type')
             current_side = lo_view.settings().get('side')
+            
             outline_type = next_in_cycle(current_type, outline_cycle)
 
             current_symlist = lo_view.settings().get('symlist')
@@ -219,6 +220,10 @@ class LatexOutlineEventHandler(EventListener):
         refresh_regions(lo_view, current_view)
         outline_type = lo_view.settings().get('current_outline_type')
         full_symlist = lo_view.settings().get('symlist')
+        alt_clicked = lo_view.settings().get('alt_clicked')
+        if alt_clicked is None:
+            alt_clicked = False
+        lo_view.settings().set('alt_clicked', False)
 
         type_nb = level_filter(outline_type)
         symlist = [sym for sym in full_symlist if sym["level"] <= type_nb]
@@ -243,9 +248,17 @@ class LatexOutlineEventHandler(EventListener):
         # If the copy symbol ❐ was pressed
         if 'copy' in sel_scope:
             label = symlist[row]["content"]
-            sublime.set_clipboard(label)
+            if alt_clicked:
+                is_equation = symlist[row]["is_equation"]
+                if is_equation:
+                    copied_label = "\\eqref{" + label + "}"
+                else:
+                    copied_label = "\\ref{" + label + "}"
+            else:
+                copied_label = label
+            sublime.set_clipboard(copied_label)
             sublime.active_window().status_message(
-                f" ✓ Copied reference '{label}' to the clipboard")
+                f" ✓ Copied reference '{copied_label}' to the clipboard")
             lo_view.sel().clear()
             sublime.active_window().focus_view(current_view)
             return
@@ -302,3 +315,14 @@ class LatexOutlineEventHandler(EventListener):
         path = window.active_view().file_name()
         aux_file = os.path.splitext(path)[0] + ".aux"
         refresh_with_new_aux(aux_file, window, i=0, step=0)
+
+# -------------------
+
+class AltClickedCommand(TextCommand):
+    def run_(self, edit, args):
+        view_syntax = self.view.settings().get('syntax')
+        if not view_syntax or 'latexoutline' not in view_syntax:
+            return
+        print("§§§§§")
+        self.view.settings().set('alt_clicked', True)
+        self.view.run_command("drag_select", {'event': args['event']})

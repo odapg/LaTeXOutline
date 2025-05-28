@@ -768,7 +768,7 @@ def get_contents_from_latex_file(file_path):
 def extract_symbols_from_content(content, file_path):
     symbols = []    
     for command, base_type, level in symbol_patterns:
-        pattern = re.compile(rf"\\({command})(\*)?\s*\{{")
+        pattern = re.compile(rf"\\({command})(\*)?\s*(?:\[[^\]]*\])?\{{")
         for match in pattern.finditer(content):
             cmd_name = match.group(1)
             if is_comment(content, (match.start(),match.end())):
@@ -923,4 +923,3 @@ class LoInsertInView(TextCommand):
         self.view.erase(edit, Region(0, self.view.size()))
         self.view.insert(edit, 0, text)
         self.view.sel().clear()
-
