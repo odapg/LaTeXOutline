@@ -323,6 +323,5 @@ class AltClickedCommand(TextCommand):
         view_syntax = self.view.settings().get('syntax')
         if not view_syntax or 'latexoutline' not in view_syntax:
             return
-        print("§§§§§")
         self.view.settings().set('alt_clicked', True)
         self.view.run_command("drag_select", {'event': args['event']})
