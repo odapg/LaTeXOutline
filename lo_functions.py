@@ -30,8 +30,9 @@ lo_chars = {
     'copy': '❐',
     'takealook': '⌖'}
 
-# ----------------------------------------------------------------
-symbol_patterns = [
+# --------------------- Detected symbols -------------------------
+# pattern / name / level
+symbols_list = [
     ("title", "title", -1),
     ("label", "label", 20),
     ("part", "part", 0),
@@ -42,6 +43,18 @@ symbol_patterns = [
     ("paragraph", "paragraph", 5),
     ("frametitle", "frametitle", 3),
 ]
+
+# ------------------- Some regex patterns -----------------------
+eq_pattern = re.compile(r'''
+    (align|alignat|aligned|alignedat|displaymath
+    |eqnarray|equation|flalign|gather|gathered
+    |math|multline|x?xalignat|split
+    |dmath|dseries|dgroup|darray|dsuspend)(\*)?
+''', re.VERBOSE)
+part_pattern = re.compile(r"^Part")
+chap_pattern = re.compile(r"^Chapter:")
+symbols_patterns = [(re.compile(rf"\\({s[0]})(\*)?\s*(?:\[[^\]]*\])?\{{"), s[1], s[2])
+                    for s in symbols_list]
 
 # ----------------------------------------------------------------
 
@@ -56,7 +69,8 @@ def show_outline(window, side="right", outline_type="toc", path=None):
     """
     Creates the outline view. 
     Filling it will be taken care of by LatexOutlineEventHandler which in
-    particular calls the fill_sidebar command.
+    particular calls the on_activated method (and then refresh_lo_view and
+    fill_symlist).
     """
 
     # Creates the outline view otherwise
@@ -89,8 +103,6 @@ def fill_symlist(base_symlist, path, view, lo_view):
     show_ref_nb = lo_settings.get('show_ref_numbers')
     show_env_names = lo_settings.get('show_environments_names')
 
-    part_pattern = re.compile(r"^Part")
-    chap_pattern = re.compile(r"^Chapter:")
     shift = 0
     if any(part_pattern.search(b["type"]) for b in base_symlist):
         shift = 2
@@ -111,6 +123,7 @@ def fill_symlist(base_symlist, path, view, lo_view):
             ref = get_ref(sym, type, aux_data)
         else:
             ref = None
+
         is_equation = False
 
         fancy_content = new_lo_line(sym, ref, type, is_equation=is_equation, 
@@ -171,7 +184,7 @@ def fill_sidebar(lo_view, sym_list, outline_type):
     lo_view.run_command('latex_outline_fill_sidebar', 
                         {'symlist': sym_list, 'outline_type': outline_type})
 
-# --------------------------
+# ------
 
 class LatexOutlineFillSidebarCommand(TextCommand):
     '''Text command for the latter'''
@@ -382,8 +395,7 @@ class GetEnvNamesTask(threading.Thread):
                 sym = symlist[i]
                 if sym["file"] != file_path:
                     continue
-                if sym["is_equation"]:
-                    return
+
                 if sym["type"] != "label":
                     if out_data is not None and len(out_data)>0 and sym["type"] != "title":
                         # Adds section names from the .out file
@@ -417,6 +429,7 @@ class GetEnvNamesTask(threading.Thread):
                         env_type = env_type.title()
 
                     symlist[i]["env_type"] = env_type
+                    symlist[i]["is_equation"] = is_equation
                     symlist[i]["fancy_content"] = new_lo_line(
                                                     sym["content"],
                                                     sym["ref"], 
@@ -682,10 +695,18 @@ def get_sidebar_status(window):
 def get_symbols(file_path):
     tex_files = get_all_latex_files(file_path)
     all_symbols = []
+    comment_pkg_in = False
     for f in tex_files:
         content = get_contents_from_latex_file(f)
         if content:
+            if uses_comment_package(content):
+                comment_pkg_in = True
             more_symbols = extract_symbols_from_content(content, f)
+            if comment_pkg_in:
+                comment_blocks = find_comment_blocks(content)
+                more_symbols = [item for item in more_symbols 
+                                if not point_in_block(item["region"][0], comment_blocks)]
+
         else:
             more_symbols = []
         all_symbols.extend(more_symbols)
@@ -767,9 +788,8 @@ def get_contents_from_latex_file(file_path):
 
 def extract_symbols_from_content(content, file_path):
     symbols = []    
-    for command, base_type, level in symbol_patterns:
-        pattern = re.compile(rf"\\({command})(\*)?\s*(?:\[[^\]]*\])?\{{")
-        for match in pattern.finditer(content):
+    for sym_regex, base_type, level in symbols_patterns:
+        for match in sym_regex.finditer(content):
             cmd_name = match.group(1)
             if is_comment(content, (match.start(),match.end())):
                 continue
@@ -810,15 +830,8 @@ def get_all_latex_files(file_path):
 
 # --------------------------
 
-pattern = re.compile(r'''
-    (align|alignat|aligned|alignedat|displaymath
-    |eqnarray|equation|flalign|gather|gathered
-    |math|multline|x?xalignat|split
-    |dmath|dseries|dgroup|darray|dsuspend)(\*)?
-''', re.VERBOSE)
-
 def equation_test(type):
-    return bool(pattern.match(type))
+    return bool(eq_pattern.match(type))
 
 # --------------------------
 
@@ -872,7 +885,7 @@ def next_in_cycle(item, my_list):
 # --------------------------
 
 def get_symbol_level(symbol):
-    for pattern in symbol_patterns:
+    for pattern in symbols_list:
         if symbol == pattern[0]:
             return pattern[2]
     return 999
@@ -923,3 +936,60 @@ class LoInsertInView(TextCommand):
         self.view.erase(edit, Region(0, self.view.size()))
         self.view.insert(edit, 0, text)
         self.view.sel().clear()
+
+# -------------------
+
+def uses_comment_package(content):
+
+    pattern = re.compile(r'\\usepackage(?:\[[^\]]*\])?{[^}]*\bcomment\b[^}]*}')
+    for match in pattern.finditer(content):
+        start = match.start()
+        line_start = content.rfind('\n', 0, start) + 1
+        line_end = content.find('\n', start)
+        if line_end == -1:
+            line_end = len(content)
+        line = content[line_start:line_end]
+        if not line.strip().startswith('%'):
+            return True
+    return False
+
+# -------------------
+
+def find_comment_blocks(text):
+    start_tag = r"\begin{comment}"
+    end_tag = r"\end{comment}"
+    stack = []
+    top_level_blocks = []
+
+    index = 0
+    while index < len(text):
+        next_start = text.find(start_tag, index)
+        next_end = text.find(end_tag, index)
+
+        if next_start != -1 and (next_start < next_end or next_end == -1):
+            stack.append(next_start)
+            index = next_start + len(start_tag)
+        elif next_end != -1:
+            if not stack:
+                # Unmatched \\end{comment}
+                break
+            start_pos = stack.pop()
+            if not stack: 
+                top_level_blocks.append((start_pos, next_end + len(end_tag)))
+            index = next_end + len(end_tag)
+        else:
+            break
+
+    # if stack:
+    #  Unmatched \\begin{comment}
+        # pass
+    return top_level_blocks
+
+# -------------------
+
+def point_in_block(point, blocks):
+    for start, end in blocks:
+        if start <= point < end:
+            return True
+    return False
+

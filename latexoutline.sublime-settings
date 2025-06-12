@@ -25,7 +25,7 @@
   "outline_width": 0.22,
 
   // Wrap the lines in the outline view
-  "line_wrap": true,  
+  "line_wrap": false,  
 
   // To customize
   "font_face": "",
@@ -48,6 +48,4 @@
   "tab_size": 4,
   "caret_extra_width": 0, 
   "draw_white_space": "none",
-  "draw_unicode_white_space": "none",
-  
 }

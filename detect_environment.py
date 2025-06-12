@@ -5,12 +5,13 @@
 
 import re
 
-# -------------------------------------------------
+# ------------- Some regex patterns ----------------
 
 begin_pattern = r"\\begin\{([^\}]*)\}"
 end_pattern = r"\\end\{([^\}]*)\}"
 begin_re = re.compile(begin_pattern)
 end_re = re.compile(end_pattern)
+comment_line_re = re.compile(r"\s*%.*")
 
 # -------------------------------------------------
 
@@ -53,8 +54,6 @@ def get_lines(text, start, end):
     return text[line_start:line_end]
 
 # ------------------------------
-
-comment_line_re = re.compile(r"\s*%.*")
 
 def is_comment(contents, reg):
     line_str = get_lines(contents, reg[0], reg[1])

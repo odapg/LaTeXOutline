@@ -202,6 +202,9 @@ class LatexOutlineEventHandler(EventListener):
             return
         if view.window().get_view_index(view)[0] == -1:
             return
+        just_clicked = view.settings().get('just_clicked')
+        if just_clicked is not None and just_clicked:
+            return
         window = sublime.active_window()
         lo_view = view
 
@@ -325,3 +328,5 @@ class AltClickedCommand(TextCommand):
             return
         self.view.settings().set('alt_clicked', True)
         self.view.run_command("drag_select", {'event': args['event']})
+        self.view.settings().set('just_clicked', True)
+        sublime.set_timeout_async(lambda: self.view.settings().set('just_clicked', False), 200)
