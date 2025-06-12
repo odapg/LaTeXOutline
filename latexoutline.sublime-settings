@@ -25,7 +25,7 @@
   "outline_width": 0.22,
 
   // Wrap the lines in the outline view
-  "line_wrap": false,  
+  "line_wrap": true,  
 
   // To customize
   "font_face": "",
