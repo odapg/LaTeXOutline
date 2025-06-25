@@ -42,7 +42,7 @@
     "args": {}
   },
   {
-    "caption": "LaTeXOutline: Settings",
+    "caption": "Preferences: LaTeXOutline Settings",
     "command": "edit_settings",
     "args": {
         "base_file": "${packages}/LaTeXOutline/latexoutline.sublime-settings",
@@ -50,7 +50,7 @@
     },
   },
   {
-  "caption": "LaTeXOutline: Keybindings",
+  "caption": "Preferences: LaTeXOutline Key Bindings",
   "command": "edit_settings",
   "args": {
       "base_file": "${packages}/LaTeXOutline/Default ($platform).sublime-keymap",

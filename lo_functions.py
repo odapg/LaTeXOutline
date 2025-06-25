@@ -96,8 +96,8 @@ def show_outline(window, side="right", outline_type="toc", path=None):
 
 def fill_symlist(base_symlist, path, view, lo_view):
     '''
-    Filters the symlist to only show sections and labels
-    Prepares their presentation in the LO view, put it in the 'symlist' setting
+    Generates a fully new list of the symbols in the file
+    Prepares their presentation in the LO view, puts it in the 'symlist' setting
     '''
     lo_settings = sublime.load_settings('latexoutline.sublime-settings')
     show_ref_nb = lo_settings.get('show_ref_numbers')
@@ -699,14 +699,14 @@ def get_symbols(file_path):
     for f in tex_files:
         content = get_contents_from_latex_file(f)
         if content:
-            if uses_comment_package(content):
-                comment_pkg_in = True
             more_symbols = extract_symbols_from_content(content, f)
+            # Exclude parts commented with the comment package
+            if not comment_pkg_in and uses_comment_package(content):
+                comment_pkg_in = True
             if comment_pkg_in:
                 comment_blocks = find_comment_blocks(content)
                 more_symbols = [item for item in more_symbols 
                                 if not point_in_block(item["region"][0], comment_blocks)]
-
         else:
             more_symbols = []
         all_symbols.extend(more_symbols)
