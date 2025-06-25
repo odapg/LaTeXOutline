@@ -3,5 +3,6 @@
         "button": "button1", "count": 1, "modifiers": ["alt"],
         "press_command": "alt_clicked",
         "command": "noop",
+        "context": [{ "key": "selector", "operator": "equal", "operand": "source.latexoutline" }]
     },
  ]

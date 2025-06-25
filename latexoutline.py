@@ -262,7 +262,7 @@ class LatexOutlineEventHandler(EventListener):
             sublime.set_clipboard(copied_label)
             sublime.active_window().status_message(
                 f" ✓ Copied reference '{copied_label}' to the clipboard")
-            lo_view.sel().clear()
+            # lo_view.sel().clear()
             sublime.active_window().focus_view(current_view)
             return
 
