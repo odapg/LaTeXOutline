@@ -11,6 +11,9 @@ LaTeXOutline accepts multiple-files `.tex` documents.
 
 ![LaTeXOutline example](./images/example.png)
 
+The simplest way to install LaTeXOutline is by using [PackageControl](https://packagecontrol.io/packages/LaTeXOutline).
+You can also install it manually by following these steps.
+
 #### Manual installation
 
 1. Clone or download this repository using the green `Clone or download` button.
@@ -31,7 +34,7 @@ LaTeXOutline accepts multiple-files `.tex` documents.
 
    Click on a `⌖` sign to take a look at a part of the LaTeX file in a panel. Use `Esc` to close the panel.
 
-   Click on a `❐` sign to copy the corresponding label to the clipboard.
+   Click on a `❐` sign to copy the corresponding label to the clipboard (`alt`+click on a `❐` sign copies `\ref{label}` or `\eqref{label}`).
 
    Click on a section's *bullet* in the LaTeXOutline tab to copy the section's corresponding label in the clipboard. A message is given in the status bar below to indicate if this label has been found.
 
