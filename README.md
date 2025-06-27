@@ -26,17 +26,13 @@ You can also install it manually by following these steps.
 
 1. Open a LaTeX File.
 
-2. Use the command Palette entries `LaTeXOutline: ToC on the Right` (or `Left`), `LaTeXOutline: ToC and labels on the Right` (or `Left`) to open the outline pane. Use `LaTeX Outline: Close sidebar` to close it.
+2. Use the command Palette entries `LaTeXOutline: ToC on the Right` (or `Left`), `LaTeXOutline: ToC and labels on the Right` (or `Left`) to open the outline pane. Use `LaTeX Outline: Close sidebar` to close it.  
+Alternatively, use the corresponding shortcuts (by default, `ctrl j, a`, `ctrl j, e`, `ctrl j, z` on windows/linux and `⌘ j, a`, `⌘ j, e`, `⌘ j, z` on mac). See the keybindings settings for more details.
 
-   Alternatively, use the corresponding shortcuts (by default, `ctrl j, a`, `ctrl j, e`, `ctrl j, z` on windows/linux and `⌘ j, a`, `⌘ j, e`, `⌘ j, z` on mac). See the keybindings settings for more details.
-
-3. Click on the titles in the LaTeXOutline tab to get to the corresponding place in your LaTeX file.
-
-   Click on a `⌖` sign to take a look at a part of the LaTeX file in a panel. Use `Esc` to close the panel.
-
-   Click on a `❐` sign to copy the corresponding label to the clipboard (`alt`+click on a `❐` sign copies `\ref{label}` or `\eqref{label}`).
-
-   Click on a section's *bullet* in the LaTeXOutline tab to copy the section's corresponding label in the clipboard. A message is given in the status bar below to indicate if this label has been found.
+3. Click on the titles in the LaTeXOutline tab to get to the corresponding place in your LaTeX file.  
+   Click on a `⌖` sign to take a look at a part of the LaTeX file in a panel. Use `Esc` to close the panel.  
+   Click on a `❐` sign to copy the corresponding label to the clipboard (`alt`+click on a `❐` sign copies `\ref{label}` or `\eqref{label}`).  
+   Click on a section's *bullet* in the LaTeXOutline tab to copy the section's corresponding label in the clipboard. A message is given in the status bar below to indicate if this label has been found.  
 
 ### Remarks
 
