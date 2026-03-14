@@ -223,10 +223,6 @@ class LatexOutlineEventHandler(EventListener):
         refresh_regions(lo_view, current_view)
         outline_type = lo_view.settings().get('current_outline_type')
         full_symlist = lo_view.settings().get('symlist')
-        alt_clicked = lo_view.settings().get('alt_clicked')
-        if alt_clicked is None:
-            alt_clicked = False
-        lo_view.settings().set('alt_clicked', False)
 
         type_nb = level_filter(outline_type)
         symlist = [sym for sym in full_symlist if sym["level"] <= type_nb]
@@ -251,7 +247,9 @@ class LatexOutlineEventHandler(EventListener):
         # If the copy symbol ❐ was pressed
         if 'copy' in sel_scope:
             label = symlist[row]["content"]
-            if alt_clicked:
+            lo_settings = sublime.load_settings('latexoutline.sublime-settings')
+            with_cmd = lo_settings.get('copies_label_with_refcommand')
+            if with_cmd:
                 is_equation = symlist[row]["is_equation"]
                 if is_equation:
                     copied_label = "\\eqref{" + label + "}"
@@ -319,14 +317,3 @@ class LatexOutlineEventHandler(EventListener):
         aux_file = os.path.splitext(path)[0] + ".aux"
         refresh_with_new_aux(aux_file, window, i=0, step=0)
 
-# -------------------
-
-class AltClickedCommand(TextCommand):
-    def run_(self, edit, args):
-        view_syntax = self.view.settings().get('syntax')
-        if not view_syntax or 'latexoutline' not in view_syntax:
-            return
-        self.view.settings().set('alt_clicked', True)
-        self.view.run_command("drag_select", {'event': args['event']})
-        self.view.settings().set('just_clicked', True)
-        sublime.set_timeout_async(lambda: self.view.settings().set('just_clicked', False), 200)

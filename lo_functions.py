@@ -114,7 +114,7 @@ def fill_symlist(base_symlist, path, view, lo_view):
     symlist = []
     for item in base_symlist:
         rgn = item["region"]
-        sym = item["content"]
+        sym = " ".join(item["content"].splitlines())
         type = item["type"]
         file = item["file"]
         level = item["level"]

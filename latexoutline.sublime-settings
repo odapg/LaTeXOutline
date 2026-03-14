@@ -33,6 +33,9 @@
   "gutter": false,
   "margin": 3,
   
+  // false: when '❐' is pressed, copies label to the clipboard
+  // true: when '❐' is pressed, copies \ref{label} or \eqref{label}
+  "copies_label_with_refcommand": false,
 
   // The following settings are used by the outline view. 
   // It is recommended to leave them as they are.
