@@ -31,7 +31,7 @@ Alternatively, use the corresponding shortcuts (by default, `ctrl j, a`, `ctrl j
 
 3. Click on the titles in the LaTeXOutline tab to get to the corresponding place in your LaTeX file.  
    Click on a `⌖` sign to take a look at a part of the LaTeX file in a panel. Use `Esc` to close the panel.  
-   Click on a `❐` sign to copy the corresponding label to the clipboard (`alt`+click on a `❐` sign copies `\ref{label}` or `\eqref{label}`).  
+   Click on a `❐` sign to copy the corresponding label to the clipboard.  
    Click on a section's *bullet* in the LaTeXOutline tab to copy the section's corresponding label in the clipboard. A message is given in the status bar below to indicate if this label has been found.  
 
 ### Remarks
