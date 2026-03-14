@@ -4,6 +4,6 @@ LaTeXOutline v. 2.6.2 -- Changelog
 
 - Adds instead a new boolean option in the settings: "copies_label_with_refcommand"
 	false: when '❐' is pressed, copies label to the clipboard
-	true: when '❐' is pressed, copies \ref{label} or \eqref{label} is copied to the cliboard
+	true: when '❐' is pressed, \ref{label} or \eqref{label} is copied to the cliboard
 
 - Corrects a bug where a section title with several lines could shift the outline links to the LaTeX file
